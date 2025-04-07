@@ -1,4 +1,4 @@
-class Tank extends Sprite {
+class Tank extends MovingEntity {
 
   PVector acceleration;
   PVector velocity;
@@ -15,9 +15,12 @@ class Tank extends Sprite {
   
   int state;
   boolean isInTransition;
+  
+    
  
   //======================================  
   Tank(String _name, PVector _startpos, float _size, color _col ) {
+    super(new Vector2D(_startpos.x, _startpos.y), _col, new Vector2D(0,0), 40, new Vector2D(0, 0), 1, 0.5,200);
     println("*** Tank.Tank()");
     this.name         = _name;
     this.diameter     = _size;
@@ -32,6 +35,7 @@ class Tank extends Sprite {
     this.speed        = 0;
     this.maxspeed     = 3;
     this.isInTransition = false;
+  
   }
   
   //======================================
@@ -41,8 +45,8 @@ class Tank extends Sprite {
     borders();
   }
   
-  void checkForCollisions(Sprite sprite) {
-    
+  void checkForCollisions(Tank sprite) {
+    moveTo(new Vector2D(400, 400));
   }
   
   void checkForCollisions(PVector vec) {
@@ -129,40 +133,77 @@ class Tank extends Sprite {
     this.position.add(velocity);
   }
   
-  //====================================== 
-  void drawTank(float x, float y) {
-    fill(this.col, 50); 
+}
 
-    ellipse(x, y, 50, 50);
-    strokeWeight(1);
-    line(x, y, x+25, y);
-    
-    //kanontornet
-    ellipse(0, 0, 25, 25);
-    strokeWeight(3);   
-    float cannon_length = this.diameter/2;
-    line(0, 0, cannon_length, 0);
+
+
+public class TankPic extends PicturePS{
+  
+  int base;
+  float size;
+  
+  public TankPic(PApplet app, float size, int base){
+    super(app);
+    this.size = size;
+    this.base = base;
+  
   }
   
-  void display() {
-    fill(this.col);
-    strokeWeight(1);
+  public TankPic(PApplet app, float size){
+    this(app, size, color(255, 169, 19));
+  }
+  
+
+  public void draw(BaseEntity user, float posX, float posY, float velX, 
+  float velY, float headX, float headY, float etime){
     
-    pushMatrix();
     
-      translate(this.position.x, this.position.y);
+    
+        // Draw and hints that are specified and relevant
+     if (hints != 0) {
+        Hints.hintFlags = hints;
+        Hints.draw(app, user, velX, velY, headX, headY);
+    }
+    // Determine the angle the tank is heading
+    float angle = PApplet.atan2(headY, headX);
+    
+    
+    
+      pushStyle();
+      pushMatrix();
+      
+      
+      rotate(angle);
+      fill(base);
+      strokeWeight(1);
+    
+      translate(posX, posY);
       
       imageMode(CENTER);
-      drawTank(0, 0);
+      
+        fill(base, 100);
+        ellipse(0, 0, size, size);
+        strokeWeight(1);
+        line(0, 0, 0+25, 0);
+        
+        //kanontornet
+        ellipse(0, 0, size/2, size/2);
+        strokeWeight(3);   
+        float cannon_length = size/2;
+        line(0, 0, cannon_length, 0);
       imageMode(CORNER);
       
-      strokeWeight(1);
-      fill(230);
-      rect(0+25, 0-25, 100, 40);
-      fill(30);
-      textSize(15);
-      text(this.name +"\n( " + this.position.x + ", " + this.position.y + " )", 25+5, -5-5);
+      //strokeWeight(1);
+      //fill(230);
+      //rect(0+25, 0-25, 100, 40);
+      //fill(30);
+      //textSize(15);
+      //text(this.name +"\n( " + this.position.x + ", " + this.position.y + " )", 25+5, -5-5);
     
     popMatrix();
+    popStyle();
+    
   }
+
+
 }
