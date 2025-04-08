@@ -30,7 +30,7 @@ color team0Color;
 PVector team0_tank0_startpos;
 PVector team0_tank1_startpos;
 PVector team0_tank2_startpos;
-Tank tank0, tank1, tank2; //<>// //<>// //<>// //<>//
+Tank tank0, tank1, tank2; //<>// //<>// //<>// //<>// //<>//
 
 // Team1
 color team1Color;
@@ -161,6 +161,9 @@ void setup()
    allTanks[3] = tank3;
    allTanks[4] = tank4;
    allTanks[5] = tank5;
+   
+   
+  
   
   sw.reset();
   nl.updateNavLayout(world);
@@ -188,12 +191,12 @@ void draw()
  
   
   }
-
+  
   // UPDATE DISPLAY 
   displayHomeBase();
 
-  
-  displayGUI();
+  displayGUI(); 
+
  
   world.draw(elapsedtime);
  
@@ -228,6 +231,7 @@ void updateTanksLogic() {
   for (Tank tank : allTanks) {
     tank.update();
   }
+
 }
 
 void checkForCollisions() {

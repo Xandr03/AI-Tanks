@@ -18,29 +18,38 @@ class SpatialhashMap{
 }
 
 
+  public class Cell{
+   
+    public PVector pos;
+    public boolean isWalkable = true;
+    
+    //fix the neighobure so a a left side is connected to the right, with this it wrapes
 
-
-class Cell{
- 
-  PVector pos;
-  boolean isWalkable = true;
+    
+    Cell(PVector position, boolean walkable){
+        pos = position;
+        isWalkable = walkable;
+    }
   
-  Cell(PVector position, boolean walkable){
-      pos = position;
-      isWalkable = walkable;
   }
-  
-}
 
 
 
-class NavLayout {
+
+
+public class NavLayout{
  
   
     int minRec = 25;
     int size = 0;
     int mwidth = 0;
     int mheight = 0;
+    
+    
+    public int[] neighbours ={(-width/25) + 1, -width/2, -width/2 - 1,
+                              -1, /*0*/  1, 
+                              (width/25) - 1, -width/2, width/2 + 1};
+    
 
    
   Cell[] cells;
@@ -99,6 +108,20 @@ class NavLayout {
    
     int newX = floor(x/minRec);
     int newY = floor(y/minRec);
+    
+    System.out.println("newX : " + newX + " newY : " + newY);
+    
+    return newY * (mheight/minRec) + newX;
+    
+  }
+  
+    int getCellPosition(PVector vec){
+    
+    
+    System.out.println("X : " + vec.x + " Y : " + vec.y);
+   
+    int newX = floor(vec.x/minRec);
+    int newY = floor(vec.y/minRec);
     
     System.out.println("newX : " + newX + " newY : " + newY);
     

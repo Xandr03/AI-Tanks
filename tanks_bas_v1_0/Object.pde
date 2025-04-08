@@ -1,6 +1,6 @@
 
 
-
+/*
 class Object extends BaseEntity {
   
   Object(){ObjectHolder.add(this);}
@@ -27,3 +27,4 @@ static class ObjectHolder{
   
   
 }
+*/

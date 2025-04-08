@@ -1,6 +1,3 @@
-class Sprite extends Object {
- 
-  
-  
-  
+class Sprite {
+
 }
