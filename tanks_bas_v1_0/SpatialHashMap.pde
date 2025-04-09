@@ -41,7 +41,7 @@ class SpatialhashMap{
 public class NavLayout{
  
   
-    int minRec = 25;
+    int minRec = 50;
     int size = 0;
     int mwidth = 0;
     int mheight = 0;

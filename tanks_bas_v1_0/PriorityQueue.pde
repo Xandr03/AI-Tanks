@@ -30,8 +30,6 @@ class PriorityQueue<T>{
       Node<T> current = head.next;   
       Node<T> last = head;
       
-
-      
       for(int i = 0; i < size; i++){
       
         if(current == null || newNode.prio < current.prio ){        
