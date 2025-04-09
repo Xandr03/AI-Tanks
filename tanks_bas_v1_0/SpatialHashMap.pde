@@ -49,9 +49,9 @@ public class NavLayout{
     float rounder = 1.5;
     
     
-    public int[] neighbours ={(-width/25) + 1, -width/25, -width/25 - 1,
+    public int[] neighbours ={(-width/minRec) + 1, -width/minRec, -width/minRec - 1,
                               -1, /*0*/  1, 
-                              (width/25) - 1, -width/25, width/25 + 1};
+                              (width/minRec) - 1, -width/25, width/minRec + 1};
                               
                               
                               

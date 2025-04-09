@@ -67,6 +67,9 @@ class AStar{
     
       Node lowestValueNode = openList.poll();
       int index = nl.getCellPosition(lowestValueNode.position);
+      if(!nl.cells[index].isWalkable){
+        continue;
+      }
       closedList.add(lowestValueNode);
       
      
@@ -84,7 +87,7 @@ class AStar{
           if(neighbourIndex > nl.size - 1 || neighbourIndex < 0 ){continue;}
           
           PVector p = nl.cells[neighbourIndex].pos;
-          Node neighbour = new Node(lowestValueNode.pathCost + dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y)/nl.minRec, EuclideanDistance(p, goal), p);
+          Node neighbour = new Node(lowestValueNode.pathCost + dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y), ManhattanDistance(p, goal), p);
           System.out.println("PathCost:  " +neighbour.pathCost);
           if(closedList.contains(neighbour) || !nl.cells[neighbourIndex].isWalkable ){
              continue;

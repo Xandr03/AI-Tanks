@@ -1,4 +1,4 @@
-class Tank extends MovingEntity {
+class Tank extends Vehicle {
 
   PVector acceleration;
   PVector velocity;

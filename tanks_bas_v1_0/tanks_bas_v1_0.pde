@@ -166,8 +166,6 @@ void setup()
    allTanks[4] = tank4;
    allTanks[5] = tank5;
    
-   
-  
   
   sw.reset();
   nl.updateNavLayout(world);
@@ -332,8 +330,8 @@ void mouseClicked()
   System.out.println("Is "+ index + " Walkable [" + nl.cells[index].pos+ "]"+ nl.cells[index].isWalkable);
   
 
-  if(astar.computePath(new PVector((float)mover0.pos().x, (float)mover0.pos().y), new PVector(mouseX, mouseY), nl)){
-     mover0.AP().pathSetRoute(astar.path);
+  if(astar.computePath(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), nl)){
+     allTanks[0].AP().pathSetRoute(astar.path);
   }
 }
 
