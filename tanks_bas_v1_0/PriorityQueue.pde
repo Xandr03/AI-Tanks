@@ -13,38 +13,51 @@ class PriorityQueue<T>{
     }
     int size;
     
-    Node<T> head = new Node<T>(null,Integer.MAX_VALUE);
+    Node<T> head = null;
     
     ArrayList<T> queue;
     
     PriorityQueue(){}
  
     void add(T element, float prio){
-      Node<T> newNode = new Node<T>(prio);      
-      Node<T> current = head;   
-      while(!(newNode.prio < current.prio)){        
-        if(current.next == null){
-          current.next = newNode;
+      Node<T> newNode = new Node<T>(element, prio);    
+      if(head == null){
+        head = newNode;
+        size++;
+        return;
+      } 
+    
+      Node<T> current = head.next;   
+      Node<T> last = head;
+      
+
+      
+      for(int i = 0; i < size; i++){
+      
+        if(current == null || newNode.prio < current.prio ){        
+          newNode.next = current;
+          last.next = newNode;
           size++;
           return;
-        }           
-          current = current.next;          
-      }  
-        
+        }
+         
+      } 
+              
     }
-      
-      
-           
+                
     public boolean isEmpty(){   
       return size <= 0;
     }
     
     public T poll(){    
-      if(head.next == null){
-         return head.value;       
+      if(head != null){
+         T tempValue = head.value;
+         head = head.next;
+         size--;
+         System.out.println(tempValue);
+         return tempValue;       
       }
-      head = head.next;
-      return head.value;
+      return null;
     }
       
 }

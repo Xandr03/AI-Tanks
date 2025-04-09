@@ -2,7 +2,9 @@
 class AStar{
   
   
-  ArrayList<Vector2D> path;
+  LinkedList<GraphNode> path;
+  boolean hasPath = false;
+  int pathSize = 0;
   
    class Node implements Comparable<Node>{
     
@@ -32,6 +34,11 @@ class AStar{
       return 1; 
     }
     
+    @Override public String toString(){
+      String s = "X: " + position.x + " Y: " + position.y;
+      return s;
+    }
+    
     
     @Override public boolean equals(Object other){  
         if(other == null){return false;}
@@ -54,7 +61,7 @@ class AStar{
     ArrayList<Node> closedList = new ArrayList<Node>();
    
     
-    Node startNode = new Node(0, ManhattanDistance(start, goal), start);
+    Node startNode = new Node(0, EuclideanDistance(start, goal), start);
     openList.add(startNode, startNode.sum);
     while(!openList.isEmpty()){
     
@@ -62,17 +69,24 @@ class AStar{
       int index = nl.getCellPosition(lowestValueNode.position);
       closedList.add(lowestValueNode);
       
-      
-      if(lowestValueNode.position.equals(goal)){       
+     
+      if(nl.getCellPosition(lowestValueNode.position) == nl.getCellPosition(goal)){       
         this.path = reconstructPath(lowestValueNode);     
+        hasPath = true;
         return true;
       }
       
-      for(int i = 0; i < 8; i++){
-          PVector p = nl.cells[nl.neighbours[i] + index].pos;
-          Node neighbour = new Node(lowestValueNode.pathCost + 1, ManhattanDistance(p, goal), p);
- 
-          if(closedList.contains(neighbour) || !nl.cells[nl.neighbours[i] + index].isWalkable ){
+      Cell currentCell = nl.cells[index];
+      
+      for(int i = 0; i < currentCell.neighboures.size(); i++){
+          int neighbourIndex = currentCell.neighboures.get(i);
+         
+          if(neighbourIndex > nl.size - 1 || neighbourIndex < 0 ){continue;}
+          
+          PVector p = nl.cells[neighbourIndex].pos;
+          Node neighbour = new Node(lowestValueNode.pathCost + dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y)/nl.minRec, EuclideanDistance(p, goal), p);
+          System.out.println("PathCost:  " +neighbour.pathCost);
+          if(closedList.contains(neighbour) || !nl.cells[neighbourIndex].isWalkable ){
              continue;
           }
           neighbour.parent = lowestValueNode;
@@ -83,20 +97,40 @@ class AStar{
       
     
     }
+    //System.out.println(closedList);
     return false;
     
 
 
   }
   
-  ArrayList<Vector2D> reconstructPath(Node current){
+  void draw(){
+      if(!hasPath){
+        return;
+      }
+      for(int i = 0; i < astar.path.size(); i++){
+        Vector2D point = new Vector2D(astar.path.get(i).x() ,astar.path.get(i).y());
+        fill(color(0,0,0), 100);
+        if(i+1 < astar.path.size()){
+          Vector2D next = new Vector2D(astar.path.get(i+1).x() ,astar.path.get(i+1).y());
+          line((float)point.x, (float)point.y, (float)next.x, (float)next.y);
+        }
+        circle((float)point.x, (float)point.y, 10);
+        
+      
+      }  
+ 
+  }
+  
+  LinkedList<GraphNode> reconstructPath(Node current){
     
-    ArrayList<Vector2D> path = new ArrayList<>();;
-    
+    LinkedList<GraphNode> path = new LinkedList<>();
+    int id = 0;
     while(current != null){
-      path.add(new Vector2D(current.position.x, current.position.y));
+      path.addFirst(new GraphNode(id++,current.position.x, current.position.y));
       current = current.parent;
     }
+  
     return path;
   }
   

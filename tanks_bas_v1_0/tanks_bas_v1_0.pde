@@ -15,6 +15,7 @@ import game2dai.fsm.*;
 import game2dai.steering.*;
 import game2dai.utils.*;
 import game2dai.graph.*;
+import java.util.*;
 
 boolean left, right, up, down;
 boolean mouse_pressed;
@@ -48,9 +49,12 @@ World world;
 
 StopWatch sw;
 
-MovingEntity mover0;
+Vehicle mover0;
 
 NavLayout nl;
+
+ 
+AStar astar = new AStar();
 
 //======================================
 void setup() 
@@ -101,7 +105,7 @@ void setup()
   team1_tank2_startpos  = new PVector(width-50, height-50);
 
   
-  mover0 = new MovingEntity(
+  mover0 = new Vehicle(
       new Vector2D(width/2, height/2), // position
       15,                              // collision radius
      new Vector2D(15, 15),            // velocity
@@ -192,6 +196,7 @@ void draw()
   
   }
   
+ 
   // UPDATE DISPLAY 
   displayHomeBase();
 
@@ -199,7 +204,8 @@ void draw()
 
  
   world.draw(elapsedtime);
- 
+  astar.draw();
+
 }
 
 //======================================
@@ -324,6 +330,11 @@ void mouseClicked()
   int index = nl.getCellPosition(mouseX, mouseY); 
   circle(mouseX, mouseY, 5);
   System.out.println("Is "+ index + " Walkable [" + nl.cells[index].pos+ "]"+ nl.cells[index].isWalkable);
+  
+
+  if(astar.computePath(new PVector((float)mover0.pos().x, (float)mover0.pos().y), new PVector(mouseX, mouseY), nl)){
+     mover0.AP().pathSetRoute(astar.path);
+  }
 }
 
 // Mousebuttons

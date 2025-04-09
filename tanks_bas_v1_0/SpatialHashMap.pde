@@ -24,6 +24,7 @@ class SpatialhashMap{
     public boolean isWalkable = true;
     
     //fix the neighobure so a a left side is connected to the right, with this it wrapes
+    ArrayList<Integer> neighboures = new ArrayList<>();
 
     
     Cell(PVector position, boolean walkable){
@@ -45,10 +46,16 @@ public class NavLayout{
     int mwidth = 0;
     int mheight = 0;
     
+    float rounder = 1.5;
     
-    public int[] neighbours ={(-width/25) + 1, -width/2, -width/2 - 1,
+    
+    public int[] neighbours ={(-width/25) + 1, -width/25, -width/25 - 1,
                               -1, /*0*/  1, 
-                              (width/25) - 1, -width/2, width/2 + 1};
+                              (width/25) - 1, -width/25, width/25 + 1};
+                              
+                              
+                              
+                           
     
 
    
@@ -73,8 +80,24 @@ public class NavLayout{
            }
     
       }
+      
+      for(int i = 0; i < size; i++){
+        
+        for(int j = 0; j < 8; j++){
+          int neighbourIndex = abs(i + neighbours[j]);
+          if(neighbourIndex > size - 1 || neighbourIndex < 0 ){continue;}
+          if(dist(cells[neighbourIndex].pos.x, cells[neighbourIndex].pos.y, cells[i].pos.x, cells[i].pos.y) < sqrt(pow(minRec, 2) + pow(minRec, 2)) + rounder){
+            if(cells[i].neighboures.contains(neighbourIndex)){
+              continue;
+            }
+            cells[i].neighboures.add(neighbourIndex);
+          }      
+        }
+      
+      }
     
   }
+  
   
   void draw(){
    
