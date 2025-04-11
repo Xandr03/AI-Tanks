@@ -41,17 +41,17 @@ class SpatialhashMap{
 public class NavLayout{
  
   
-    int minRec = 50;
+    int minRec = 25;
     int size = 0;
     int mwidth = 0;
     int mheight = 0;
     
-    float rounder = 1.5;
+    float rounder = 10;
     
     
     public int[] neighbours ={(-width/minRec) + 1, -width/minRec, -width/minRec - 1,
                               -1, /*0*/  1, 
-                              (width/minRec) - 1, -width/25, width/minRec + 1};
+                              (width/minRec) - 1, width/minRec, width/minRec + 1};
                               
                               
                               
@@ -116,10 +116,10 @@ public class NavLayout{
           }else{
             fill(red, 35);
           }    
-          circle(p.pos.x, p.pos.y, 5);
+          circle(p.pos.x, p.pos.y, 10);
           square(p.pos.x, p.pos.y, minRec);
           fill(color(0, 0, 0),100);
-          text(i, p.pos.x,p.pos.y + 25); 
+          //text(i, p.pos.x,p.pos.y + 25); 
       }   
       
   }
@@ -127,26 +127,26 @@ public class NavLayout{
   int getCellPosition(float x, float y){
     
     
-    System.out.println("X : " + x + " Y : " + y);
+    //System.out.println("X : " + x + " Y : " + y);
    
     int newX = floor(x/minRec);
     int newY = floor(y/minRec);
     
-    System.out.println("newX : " + newX + " newY : " + newY);
+    //System.out.println("newX : " + newX + " newY : " + newY);
     
     return newY * (mheight/minRec) + newX;
     
   }
   
-    int getCellPosition(PVector vec){
+int getCellPosition(PVector vec){
     
     
-    System.out.println("X : " + vec.x + " Y : " + vec.y);
+    //System.out.println("X : " + vec.x + " Y : " + vec.y);
    
     int newX = floor(vec.x/minRec);
     int newY = floor(vec.y/minRec);
     
-    System.out.println("newX : " + newX + " newY : " + newY);
+    //System.out.println("newX : " + newX + " newY : " + newY);
     
     return newY * (mheight/minRec) + newX;
     
@@ -155,20 +155,9 @@ public class NavLayout{
   void updateNavLayout(World world){
     
     
-   int ObstacleSize = world.getObstacles(0,0).size();
-   Obstacle[] setOfOb = world.getObstacles(0,0).toArray(new Obstacle[ObstacleSize]);
+     int ObstacleSize = world.getObstacles(0,0).size();
+     Obstacle[] setOfOb = world.getObstacles(0,0).toArray(new Obstacle[ObstacleSize]);
     
-    /*
-    strokeWeight(1);
-    fill(color(0,128,100), 100);
-
-    circle(x, y,diameter);
-    */
-    
-         
-    
-         
-    //försök hitta MAX Y MAX X och MIN X MIN Y alltsåå hörn av en rectangle fråon längst upp til vänster till längst ner till höger
     for(int i = 0; i < ObstacleSize; i++){
       
       float x = (float)setOfOb[i].pos().x;
@@ -185,28 +174,18 @@ public class NavLayout{
       //System.out.println(floor(xOri/minRec));
   
       int[] cellValues = new int[distX*distY];
-  
-       
-       
-       for(int l = 0; l < distY; l++){     
-           int index = l*distY;
-           for(int j = 0; j < distX; j++){
-               cellValues[index + j] = floor((yOri+l*minRec)/minRec) * (mheight/minRec) + floor((xOri+j*minRec)/minRec);
-           }
-       }
-       
-    
-       for(int l = 0; l < distX*distY; l++){
-          if(cellValues[l] > size || cellValues[l] < 0){
-              return;
+      
+      for(int j = 0; j < size; j++){
+      
+          if(dist(x,y, cells[j].pos.x ,cells[j].pos.y ) <= diameter){
+              cells[j].isWalkable = false;     
           }
-          cells[cellValues[l]].isWalkable = false;
-            
-       }
+      
+      }
      
       
     }
   
-     }
+  }
   
 }

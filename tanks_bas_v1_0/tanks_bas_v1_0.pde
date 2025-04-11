@@ -6,6 +6,11 @@
 
 //IDE USE THE BUILT IN VEHICLE EXPLORATION MODULE AND THEN A* to find way back home
 
+
+//TODO
+//Better navmesh coillision so node covered by the tree is not walkable 
+
+
 import game2dai.entities.*;
 import game2dai.entityshapes.ps.*;
 import game2dai.maths.*;
@@ -169,6 +174,8 @@ void setup()
   
   sw.reset();
   nl.updateNavLayout(world);
+  
+
 }
 
 void draw()

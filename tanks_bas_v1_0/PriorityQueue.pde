@@ -1,4 +1,4 @@
-class PriorityQueue<T>{
+class PrioritysQueue<T>{
 
     private class Node<T>{   
       Node(T e, float prio){
@@ -17,7 +17,7 @@ class PriorityQueue<T>{
     
     ArrayList<T> queue;
     
-    PriorityQueue(){}
+    PrioritysQueue(){}
  
     void add(T element, float prio){
       Node<T> newNode = new Node<T>(element, prio);    
