@@ -22,6 +22,13 @@ class SpatialhashMap{
    
     public PVector pos;
     public boolean isWalkable = true;
+    public float disc = 100;
+    
+    float getDiscovery(){
+      float tempDisc = disc;
+      disc -= 25;
+      return tempDisc;
+    }
     
     //fix the neighobure so a a left side is connected to the right, with this it wrapes
     ArrayList<Integer> neighboures = new ArrayList<>();
@@ -48,10 +55,11 @@ public class NavLayout{
     
     float rounder = 10;
     
+    int xOffset = 0;
+    int yOffset = 0;
     
-    public int[] neighbours ={(-width/minRec) + 1, -width/minRec, -width/minRec - 1,
-                              -1, /*0*/  1, 
-                              (width/minRec) - 1, width/minRec, width/minRec + 1};
+    
+    public int[] neighbours;
                               
                               
                               
@@ -61,7 +69,8 @@ public class NavLayout{
    
   Cell[] cells;
   
-  NavLayout(int pwidth, int pheight){
+  NavLayout(int pwidth, int pheight, int cellSize){
+    this.minRec = cellSize;
     mheight = pheight;
     mwidth = pwidth;
     size = (pwidth/minRec) * (pheight/minRec);
@@ -70,12 +79,26 @@ public class NavLayout{
     
   }
   
+  NavLayout(int pwidth, int pheight, int xOffset, int yOffset, int cellSize){
+    this.minRec = cellSize;
+    mheight = floor(pheight);
+    mwidth = floor(pwidth);
+    size = floor(pwidth/minRec) * floor(pheight/minRec);
+    System.out.println(floor(pwidth/minRec) * floor(pheight/minRec));
+    cells = new Cell[size];
+    this.xOffset = xOffset;
+    this.yOffset = yOffset;
+    neighbours = new int[] {(-mwidth/minRec + 1), (-mwidth/minRec), (-mwidth/minRec - 1), -1, 1, (mwidth/minRec - 1), (mwidth/minRec), (mwidth/minRec + 1)};
+    GenerateLayout();
+    
+  }
+  
   void GenerateLayout(){
     
        for(int i = 0; i < mheight/minRec; i++){    
-           int gheight = i*(mheight/minRec);
+           int gheight = i*((mheight/minRec));
            for(int j = 0; j < mwidth/minRec; j++){  
-               PVector pos = new PVector(j*minRec, i*minRec);
+               PVector pos = new PVector(j*minRec + xOffset, i*minRec + yOffset);
                cells[gheight + j] = new Cell(pos, true);
            }
     
@@ -102,25 +125,61 @@ public class NavLayout{
   void draw(){
    
       
-      strokeWeight(1);
+      noStroke();
       color green = color(0,128,0);
       color red = color(205,28,24);
-      
+      rectMode(CENTER);
       textSize(10);
      
       circle(350, 350,5);
+      Cell c = cells[getCellPosition(mouseX, mouseY)];
       for(int i = 0; i < size; i++){
           Cell p = cells[i];    
-          if(p.isWalkable){
-            fill(green, 35);
+          float reach = 100;
+          float dist = dist(p.pos.x, p.pos.y, c.pos.x, c.pos.y);
+          if(p.isWalkable){    
+            
+             stroke(max(0, 1 - dist/reach));
+             strokeWeight(max(0, 1 - dist/reach));
+             
+             fill(#12FA36, 100 - dist);  
+             rect(p.pos.x, p.pos.y, minRec,minRec);
+             fill(#36E85E,max(30, 100 - dist));   
+             rect(p.pos.x, p.pos.y, minRec,minRec);
+            
           }else{
-            fill(red, 35);
+             strokeWeight(max(0, 1 - dist/reach));
+             stroke(max(0, 1 - dist/reach));
+
+             fill(red,max(30, 100 - dist));  
+             rect(p.pos.x, p.pos.y, minRec,minRec);
           }    
-          circle(p.pos.x, p.pos.y, 10);
-          square(p.pos.x, p.pos.y, minRec);
+
+          
+          noStroke();
+         
+          
           fill(color(0, 0, 0),100);
-          //text(i, p.pos.x,p.pos.y + 25); 
-      }   
+          textAlign(CENTER);
+          //text(i, p.pos.x,p.pos.y); 
+     
+      } 
+ 
+      blendMode(REPLACE);
+      
+      fill(color(0, 0, 0),100);
+      textAlign(CENTER);
+    
+      fill(color(#1DF092),100);
+      if(!c.isWalkable){fill(color(#F21818),100);}
+      square(c.pos.x, c.pos.y,minRec*1.2);
+      text(getCellPosition(mouseX, mouseY), c.pos.x,c.pos.y);
+
+      blendMode(BLEND);
+
+      rectMode(CORNER);
+      strokeWeight(1);
+      stroke(1);
       
   }
   
@@ -128,13 +187,10 @@ public class NavLayout{
     
     
     //System.out.println("X : " + x + " Y : " + y);
+    
+    PVector fixed = new PVector(x, y);
    
-    int newX = floor(x/minRec);
-    int newY = floor(y/minRec);
-    
-    //System.out.println("newX : " + newX + " newY : " + newY);
-    
-    return newY * (mheight/minRec) + newX;
+    return getCellPosition(fixed);
     
   }
   
@@ -142,20 +198,36 @@ int getCellPosition(PVector vec){
     
     
     //System.out.println("X : " + vec.x + " Y : " + vec.y);
+    
+    PVector fixed = vec;
+
+    if(fixed.x < 0 + xOffset){
+      fixed.x = xOffset;
+    }
+    if(fixed.y < 0 + yOffset){
+      fixed.y = yOffset;
+    }
+    if(fixed.x > mwidth){
+      fixed.x = mwidth;
+    }
+    if(fixed.y > mheight){
+      fixed.y = mheight;
+    }
+    
    
-    int newX = floor(vec.x/minRec);
-    int newY = floor(vec.y/minRec);
+    int newX = floor((fixed.x - xOffset + (minRec/2))/minRec);
+    int newY = floor((fixed.y - yOffset + (minRec/2))/minRec);
     
     //System.out.println("newX : " + newX + " newY : " + newY);
     
-    return newY * (mheight/minRec) + newX;
+    return newY  * (mheight/minRec) + newX ;
     
   }
   
   void updateNavLayout(World world){
     
     
-     int ObstacleSize = world.getObstacles(0,0).size();
+    int ObstacleSize = world.getObstacles(0,0).size();
      Obstacle[] setOfOb = world.getObstacles(0,0).toArray(new Obstacle[ObstacleSize]);
     
     for(int i = 0; i < ObstacleSize; i++){

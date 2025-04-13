@@ -10,6 +10,8 @@
 //TODO
 //Better navmesh coillision so node covered by the tree is not walkable 
 
+//Discover points are better if opposite team covers the territory
+
 
 import game2dai.entities.*;
 import game2dai.entityshapes.ps.*;
@@ -66,7 +68,7 @@ void setup()
 {
   //set variables
   size(800, 800);
-  nl = new NavLayout(800, 800);
+  nl = new NavLayout(775, 775, 25, 25, 25); //<>//
   
   world = new World(width, height);
   sw = new StopWatch();
@@ -180,6 +182,7 @@ void setup()
 
 void draw()
 {
+  noCursor();
   double elapsedtime = sw.getElapsedTime();
   world.update(elapsedtime);
   background(200);
@@ -212,6 +215,10 @@ void draw()
   astar.draw();
 
 }
+
+
+
+
 
 //======================================
 void checkForInput() {
@@ -336,14 +343,20 @@ void mouseClicked()
   circle(mouseX, mouseY, 5);
   System.out.println("Is "+ index + " Walkable [" + nl.cells[index].pos+ "]"+ nl.cells[index].isWalkable);
   
-
+    
   if(astar.computePath(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), nl)){
      allTanks[0].AP().pathSetRoute(astar.path);
   }
+ /*
+  if(astar.computeStep(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), 1000, 10, nl)){
+     allTanks[0].AP().pathSetRoute(astar.path);
+  }
+ */
 }
 
 // Mousebuttons
 void mousePressed() {
+  
   
   mouse_pressed = true;
   

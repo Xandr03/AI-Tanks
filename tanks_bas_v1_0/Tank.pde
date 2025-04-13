@@ -62,6 +62,11 @@ class Tank extends Vehicle {
     if (position.y > height+r) position.y = -r;
   }
   
+  void update(double deltaTime, World world){
+    super.update(deltaTime, world);
+    
+  }
+  
   
   //======================================
   void moveForward(){

@@ -6,7 +6,7 @@ class AStar{
   boolean hasPath = false;
   int pathSize = 0;
   
-  public ArrayList<Node> closedList = new ArrayList<Node>();
+  public Node[] closedList;
   public ArrayList<Node> visited = new ArrayList<Node>();
   
    class Node implements Comparable<Node>{
@@ -25,7 +25,8 @@ class AStar{
       this.position = position;
       this.parent = null;
     }
-   
+    
+
    
     @Override public int compareTo(Node otherNode){
       if(round(this.sum) > round(otherNode.sum)){
@@ -58,22 +59,16 @@ class AStar{
 
 
   }
-  
-  class CustomComparator implements Comparator<Node> {
 
-    @Override
-    public int compare(Node number1, Node number2) {
-      return number1.compareTo(number2);
-    }
-}
   
   boolean computePath(PVector start, PVector goal, NavLayout nl){
-
+  
+    if(!nl.cells[nl.getCellPosition(goal)].isWalkable) {return false;}
     //open list contains cells that has not been searched.
     //lowest cost first 
-    PriorityQueue<Node> openList = new PriorityQueue<Node>(new CustomComparator());
+    PriorityQueue<Node> openList = new PriorityQueue<Node>();
     //Closed list containt the cells that have already been explored
-    closedList = new ArrayList<Node>();
+    closedList = new Node[nl.size];
     visited = new ArrayList<Node>();
     
     
@@ -89,11 +84,13 @@ class AStar{
       if(!nl.cells[index].isWalkable){
         continue;
       }
-      closedList.add(lowestValueNode);
+      closedList[index] = lowestValueNode;
       
      
       if(nl.getCellPosition(lowestValueNode.position) == nl.getCellPosition(newGoal)){       
-        this.path = reconstructPath(lowestValueNode);     
+        Node gn = new Node(lowestValueNode.pathCost, lowestValueNode.heuristicCost, goal);
+        gn.parent = lowestValueNode.parent;
+        this.path = reconstructPath(gn, nl.minRec);     
         hasPath = true;
         return true;
       }
@@ -115,9 +112,8 @@ class AStar{
           neighbour.parent = lowestValueNode;
           if(!nl.cells[neighbourIndex].isWalkable ){
              continue;
-          }
-          int existingIndex = closedList.indexOf(neighbour);
-          if(existingIndex > -1 ){
+          }          
+          if(neighbour.equals(closedList[neighbourIndex])){
             continue;
           }
           visited.add(neighbour);
@@ -138,24 +134,102 @@ class AStar{
 
   }
   
+  //Weighted based on discovery
+  boolean computeStep(PVector start, float discoverGoal, int maxSteps, NavLayout nl){
+  
+  
+       //open list contains cells that has not been searched.
+    //lowest cost first 
+    PriorityQueue<Node> openList = new PriorityQueue<Node>(Collections.reverseOrder());
+    //Closed list containt the cells that have already been explored
+    closedList = new Node[nl.size];
+    visited = new ArrayList<Node>();
+    
+    float totalDiscoveryCost = 0;
+    int acceptCount = 0;
+    
+    Node startNode = new Node(0, discovery(totalDiscoveryCost, 0), start);
+    openList.add(startNode);
+    while(!openList.isEmpty()){
+    
+      
+      System.out.println(openList.peek().sum);
+      Node lowestValueNode = openList.poll();
+      if(acceptCount > 0){
+         maxSteps--;
+      }
+      
+      int index = nl.getCellPosition(lowestValueNode.position);
+      if(!nl.cells[abs(index)].isWalkable){
+        continue;
+      }
+      closedList[index] = lowestValueNode;
+      
+     
+      if(totalDiscoveryCost >= discoverGoal || maxSteps <= 0){       
+        this.path = reconstructPath(lowestValueNode, nl.minRec);     
+        hasPath = true;
+        return true;
+      }
+      
+      Cell currentCell = nl.cells[abs(index)];
+     
+      
+      for(int i = 0; i < currentCell.neighboures.size(); i++){
+          int neighbourIndex = currentCell.neighboures.get(i);
+        
+           
+          if(neighbourIndex > nl.size - 1 || neighbourIndex < 0 ){continue;}
+          
+          PVector p = nl.cells[neighbourIndex].pos;
+         
+          float gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y))/nl.minRec;
+          float heurCost = discovery(totalDiscoveryCost, nl.cells[neighbourIndex].getDiscovery());
+          Node neighbour = new Node(0, heurCost, p);
+          totalDiscoveryCost += neighbour.sum;
+          neighbour.parent = lowestValueNode;
+          if(!nl.cells[neighbourIndex].isWalkable || nl.cells[neighbourIndex].disc <= 0 ){
+             continue;
+          }
+          if(neighbour.equals(closedList[neighbourIndex])){
+            continue;
+          }
+          acceptCount++;
+          visited.add(neighbour);
+          
+          openList.add(neighbour);
+          
+          
+      }
+  
+      
+      
+    
+    }
+    
+    return false;
+  
+  
+  }
+  
   void draw(){
       blendMode(REPLACE);
       textSize(15);
       if(!hasPath){
         return;
       }
-      
+      /*
       for(int i = 0; i < visited.size(); i++){
           Vector2D point = new Vector2D(visited.get(i).position.x ,visited.get(i).position.y);
           blendMode(REPLACE);
           fill(color(255,222,33), 100);
           circle((float)point.x, (float)point.y, 10);
-        // fill(color(0,0,0), 100);
+        //fill(color(0,0,0), 100);
         // text("g " +round(visited.get(i).pathCost)+ " h" + round(visited.get(i).heuristicCost)+ " = "+ round(visited.get(i).sum), (float)point.x +10, (float)point.y);
       }  
       
 
-
+    
      for(int i = 0; i < closedList.size(); i++){
         Vector2D point = new Vector2D(closedList.get(i).position.x ,closedList.get(i).position.y);
         fill(color(255,0,0), 100);
@@ -164,6 +238,7 @@ class AStar{
        
       }  
 
+      */
       for(int i = 0; i < path.size(); i++){
         Vector2D point = new Vector2D(path.get(i).x() ,path.get(i).y());
         fill(color(0,255,0), 100);
@@ -179,7 +254,7 @@ class AStar{
  
   }
   
-  LinkedList<GraphNode> reconstructPath(Node current){
+  LinkedList<GraphNode> reconstructPath(Node current, int cellSize){
     
     LinkedList<GraphNode> path = new LinkedList<>();
     int id = 0;
@@ -199,6 +274,10 @@ class AStar{
   float ManhattanDistance(PVector current, PVector goal){
     
     return abs(current.x - goal.x) + abs(current.y - goal.y);
+  }
+  
+  float discovery(float total, float extra){  
+    return extra;
   }
   
   //Calculated the heuristic function using the Euclidean Distance
