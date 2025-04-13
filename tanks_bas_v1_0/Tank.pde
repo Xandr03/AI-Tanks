@@ -20,7 +20,7 @@ class Tank extends Vehicle {
  
   //======================================  
   Tank(String _name, PVector _startpos, float _size, color _col ) {
-    super(new Vector2D(_startpos.x, _startpos.y), _col, new Vector2D(0,0), 40, new Vector2D(0, 0), 1, 0.5,200);
+    super(new Vector2D(_startpos.x, _startpos.y),25, new Vector2D(0,0), 40, new Vector2D(0, 1), 1, 0.5,200);
     println("*** Tank.Tank()");
     this.name         = _name;
     this.diameter     = _size;
@@ -178,7 +178,7 @@ public class TankPic extends PicturePS{
       pushMatrix();
       
       
-      rotate(angle);
+      
       fill(base);
       strokeWeight(1);
     
@@ -188,6 +188,7 @@ public class TankPic extends PicturePS{
       
         fill(base, 100);
         ellipse(0, 0, size, size);
+        rotate(angle);
         strokeWeight(1);
         line(0, 0, 0+25, 0);
         
@@ -204,9 +205,10 @@ public class TankPic extends PicturePS{
       //fill(30);
       //textSize(15);
       //text(this.name +"\n( " + this.position.x + ", " + this.position.y + " )", 25+5, -5-5);
-    
+  
     popMatrix();
     popStyle();
+  
     
   }
 

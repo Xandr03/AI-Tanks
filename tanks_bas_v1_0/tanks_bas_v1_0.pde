@@ -137,6 +137,7 @@ void setup()
     //tank0_startpos = new PVector(50, 50);
     
   TankPic blueTank = new TankPic(this, 50, team0Color);
+  blueTank.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
   tank0 = new Tank("tank0", team0_tank0_startpos,tank_size, team0Color );
   tank1 = new Tank("tank1", team0_tank1_startpos,tank_size, team0Color );
   tank2 = new Tank("tank2", team0_tank2_startpos,tank_size, team0Color );
@@ -145,11 +146,15 @@ void setup()
   tank1.renderer(blueTank);
   tank2.renderer(blueTank);
   
+  
+  
+  
 
   
   
   
   TankPic redTank = new TankPic(this, 50, team1Color);
+  redTank.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
   tank3 = new Tank("tank3", team1_tank0_startpos,tank_size, team1Color );
   tank4 = new Tank("tank4", team1_tank1_startpos,tank_size, team1Color );
   tank5 = new Tank("tank5", team1_tank2_startpos,tank_size, team1Color );
@@ -172,6 +177,8 @@ void setup()
    allTanks[3] = tank3;
    allTanks[4] = tank4;
    allTanks[5] = tank5;
+   
+   allTanks[0].AP().wanderOn().wanderFactors(60, 30, 20);
    
   
   sw.reset();
