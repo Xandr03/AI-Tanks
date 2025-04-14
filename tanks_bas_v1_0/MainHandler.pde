@@ -1,4 +1,1 @@
-public final class WorldHandler{
 
-  
-}

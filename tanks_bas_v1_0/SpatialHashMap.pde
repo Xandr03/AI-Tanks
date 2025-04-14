@@ -1,45 +1,29 @@
 
-class SpatialhashMap{
+
+
+public class Cell{
  
-  HashMap<Integer, PVector> spatialMap;
+  public PVector pos;
+  public boolean isWalkable = true;
+  public float disc = 100;
   
-  private int mwidth;
-  private int mheight;
   
-  SpatialhashMap(int p_width, int p_height){
-     mwidth = p_width;
-     mheight = p_height;
-     
-     
-     
-     
+  float getDiscovery(){
+    float tempDisc = disc;
+    disc -= 25;
+    return tempDisc;
+  }
+  
+  //fix the neighobure so a a left side is connected to the right, with this it wrapes
+  ArrayList<Integer> neighboures = new ArrayList<>();
+
+  
+  Cell(PVector position, boolean walkable){
+      pos = position;
+      isWalkable = walkable;
   }
 
 }
-
-
-  public class Cell{
-   
-    public PVector pos;
-    public boolean isWalkable = true;
-    public float disc = 100;
-    
-    float getDiscovery(){
-      float tempDisc = disc;
-      disc -= 25;
-      return tempDisc;
-    }
-    
-    //fix the neighobure so a a left side is connected to the right, with this it wrapes
-    ArrayList<Integer> neighboures = new ArrayList<>();
-
-    
-    Cell(PVector position, boolean walkable){
-        pos = position;
-        isWalkable = walkable;
-    }
-  
-  }
 
 
 
@@ -61,11 +45,7 @@ public class NavLayout{
     
     public int[] neighbours;
                               
-                              
-                              
-                           
-    
-
+                             
    
   Cell[] cells;
   
@@ -88,7 +68,8 @@ public class NavLayout{
     cells = new Cell[size];
     this.xOffset = xOffset;
     this.yOffset = yOffset;
-    neighbours = new int[] {(-mwidth/minRec + 1), (-mwidth/minRec), (-mwidth/minRec - 1), -1, 1, (mwidth/minRec - 1), (mwidth/minRec), (mwidth/minRec + 1)};
+    neighbours = new int[] {(-mwidth/minRec),-1, 1, (mwidth/minRec)};
+    //{(-mwidth/minRec + 1), (-mwidth/minRec), (-mwidth/minRec - 1), -1, 1, (mwidth/minRec - 1), (mwidth/minRec), (mwidth/minRec + 1)};
     GenerateLayout();
     
   }
@@ -106,7 +87,7 @@ public class NavLayout{
       
       for(int i = 0; i < size; i++){
         
-        for(int j = 0; j < 8; j++){
+        for(int j = 0; j < 4; j++){
           int neighbourIndex = abs(i + neighbours[j]);
           if(neighbourIndex > size - 1 || neighbourIndex < 0 ){continue;}
           if(dist(cells[neighbourIndex].pos.x, cells[neighbourIndex].pos.y, cells[i].pos.x, cells[i].pos.y) < sqrt(pow(minRec, 2) + pow(minRec, 2)) + rounder){
@@ -161,10 +142,10 @@ public class NavLayout{
           
           fill(color(0, 0, 0),100);
           textAlign(CENTER);
-          //text(i, p.pos.x,p.pos.y); 
+          text(i, p.pos.x,p.pos.y); 
      
       } 
- 
+      DrawTank0PathsFound();
       blendMode(REPLACE);
       
       fill(color(0, 0, 0),100);
@@ -182,6 +163,36 @@ public class NavLayout{
       stroke(1);
       
   }
+  
+  
+  void DrawTank0PathsFound(){
+    Cell[] cs = allTanks[0].cellsVisited;
+    for(int i = 0; i < size; i++){
+      Cell p = cells[i];
+      if(cs[i] == cells[i]){
+        fill(#AE14FC,50);  
+        rect(p.pos.x, p.pos.y, minRec,minRec);
+      }
+    
+    }
+  }
+  
+  
+  public Cell getCell(int index){
+    if(!isValidIndex(index)){
+      return null;
+    }
+    return cells[index];
+  }
+  
+  public boolean isValidIndex(int index){
+    if(index > size - 1 || index < 0){
+      return false;
+    }
+    return true;
+  
+  }
+  
   
   int getCellPosition(float x, float y){
     

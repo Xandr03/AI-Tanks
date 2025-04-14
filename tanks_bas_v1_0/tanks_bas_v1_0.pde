@@ -8,9 +8,7 @@
 
 
 //TODO
-//Better navmesh coillision so node covered by the tree is not walkable 
-
-//Discover points are better if opposite team covers the territory
+//Nodes need collision check so it dosent walk in to areas its not allowed to
 
 
 import game2dai.entities.*;
@@ -23,6 +21,7 @@ import game2dai.steering.*;
 import game2dai.utils.*;
 import game2dai.graph.*;
 import java.util.*;
+import java.awt.event.KeyEvent;
 
 boolean left, right, up, down;
 boolean mouse_pressed;
@@ -63,16 +62,24 @@ NavLayout nl;
  
 AStar astar = new AStar();
 
+Team red;
+Team blue;
+
+
+Builder builder = new Builder();
+
 //======================================
 void setup() 
 {
+  
   //set variables
   size(800, 800);
   nl = new NavLayout(775, 775, 25, 25, 25); //<>//
   
   world = new World(width, height);
   sw = new StopWatch();
-  
+  blue  = new Team(#004AFF, new PVector(width - 151, height - 351), Teams.blue);
+  red = new Team(#F22020, new PVector(0,0), Teams.red);
   up             = false;
   down           = false;
   mouse_pressed  = false;
@@ -135,29 +142,26 @@ void setup()
   world.add(mover0);
   
     //tank0_startpos = new PVector(50, 50);
+
     
   TankPic blueTank = new TankPic(this, 50, team0Color);
   blueTank.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
-  tank0 = new Tank("tank0", team0_tank0_startpos,tank_size, team0Color );
-  tank1 = new Tank("tank1", team0_tank1_startpos,tank_size, team0Color );
-  tank2 = new Tank("tank2", team0_tank2_startpos,tank_size, team0Color );
+  
+
+  tank0 = new Tank("tank0", team0_tank0_startpos,tank_size, red );
+  tank1 = new Tank("tank1", team0_tank1_startpos,tank_size, red );
+  tank2 = new Tank("tank2", team0_tank2_startpos,tank_size, red );
   
   tank0.renderer(blueTank);
   tank1.renderer(blueTank);
   tank2.renderer(blueTank);
-  
-  
-  
-  
 
-  
-  
   
   TankPic redTank = new TankPic(this, 50, team1Color);
   redTank.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
-  tank3 = new Tank("tank3", team1_tank0_startpos,tank_size, team1Color );
-  tank4 = new Tank("tank4", team1_tank1_startpos,tank_size, team1Color );
-  tank5 = new Tank("tank5", team1_tank2_startpos,tank_size, team1Color );
+  tank3 = new Tank("tank3", team1_tank0_startpos,tank_size, blue );
+  tank4 = new Tank("tank4", team1_tank1_startpos,tank_size, blue );
+  tank5 = new Tank("tank5", team1_tank2_startpos,tank_size, blue );
  
   tank3.renderer(redTank);
   tank4.renderer(redTank);
@@ -178,7 +182,7 @@ void setup()
    allTanks[4] = tank4;
    allTanks[5] = tank5;
    
-   allTanks[0].AP().wanderOn().wanderFactors(60, 30, 20);
+   allTanks[0].setPatrole();
    
   
   sw.reset();
@@ -195,10 +199,12 @@ void draw()
   background(200);
   
   nl.draw();
+  blue.display();
+  red.display();
 
   
   checkForInput(); // Kontrollera inmatning.
-  
+  builder.manageInput();
   if (!gameOver && !pause) {
     
     // UPDATE LOGIC
@@ -206,8 +212,6 @@ void draw()
     
     // CHECK FOR COLLISIONS
     checkForCollisions();
-    
- 
   
   }
   
@@ -223,12 +227,21 @@ void draw()
 
 }
 
-
-
-
-
 //======================================
 void checkForInput() {
+  
+      if(mousePressed && (mouseButton == LEFT)){
+      
+        int index = nl.getCellPosition(mouseX, mouseY); 
+        circle(mouseX, mouseY, 5);
+        System.out.println("Is "+ index + " Walkable [" + nl.cells[index].pos+ "]"+ nl.cells[index].isWalkable);
+           
+        if(astar.computePath(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), nl)){
+           allTanks[0].AP().pathSetRoute(astar.path);
+        }
+      
+      }
+
   
       if (up) {
         if (!pause && !gameOver) {
@@ -270,14 +283,7 @@ void checkForCollisions() {
 //======================================
 // Följande bör ligga i klassen Team
 void displayHomeBase() {
-  strokeWeight(2);
 
-  fill(team0Color, 50);    // Base Team 0(red)
-  rect(0, 0, 150, 350);
-  
-
-  fill(team1Color, 50);    // Base Team 1(blue) 
-  rect(width - 151, height - 351, 150, 350);
 }
 
 void displayGUI() {
@@ -312,7 +318,27 @@ void keyPressed() {
       case DOWN:
         down = true;
         break;
+      case KeyEvent.VK_1:
+        System.out.println("Key 1");
+        builder.mode = buildMode.air;
+        break;
+      case KeyEvent.VK_2:
+        System.out.println("Key 2");
+        builder.mode = buildMode.walls;
+        break;
       }
+    }else{
+     switch(keyCode) {
+      case KeyEvent.VK_1:
+        System.out.println("Key 1");
+        builder.mode = buildMode.air;
+        break;
+      case KeyEvent.VK_2:
+        System.out.println("Key 2");
+        builder.mode = buildMode.walls;
+        break;
+      }
+    
     }
 
 }
@@ -346,14 +372,7 @@ void keyReleased() {
 
 void mouseClicked()
 {
-  int index = nl.getCellPosition(mouseX, mouseY); 
-  circle(mouseX, mouseY, 5);
-  System.out.println("Is "+ index + " Walkable [" + nl.cells[index].pos+ "]"+ nl.cells[index].isWalkable);
-  
-    
-  if(astar.computePath(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), nl)){
-     allTanks[0].AP().pathSetRoute(astar.path);
-  }
+
  /*
   if(astar.computeStep(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), 1000, 10, nl)){
      allTanks[0].AP().pathSetRoute(astar.path);

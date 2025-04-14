@@ -1,4 +1,18 @@
+
+
+ TankPatroleState tankPatroleState = new TankPatroleState();
+
+ TankReturnToBaseState tankReturnToBaseState = new TankReturnToBaseState();
+ TankGlobalState tankGlobalState = new TankGlobalState();
+ TankIdleState idle = new TankIdleState(); 
+ 
+
 class Tank extends Vehicle {
+  
+ 
+
+  
+  //Store Nodes it has visited
 
   PVector acceleration;
   PVector velocity;
@@ -16,15 +30,23 @@ class Tank extends Vehicle {
   int state;
   boolean isInTransition;
   
+  Team team;
+  
+  
+  Cell[] cellsVisited = new Cell[nl.size];
+  
+  Sensor sensor;
+  
     
  
   //======================================  
-  Tank(String _name, PVector _startpos, float _size, color _col ) {
-    super(new Vector2D(_startpos.x, _startpos.y),25, new Vector2D(0,0), 40, new Vector2D(0, 1), 1, 0.5,200);
+  Tank(String _name, PVector _startpos, float _size, Team team ) {
+    super(new Vector2D(_startpos.x, _startpos.y),25, new Vector2D(0,0), 40, new Vector2D(0, 1), 1, 10 ,200);
     println("*** Tank.Tank()");
     this.name         = _name;
     this.diameter     = _size;
-    this.col          = _col;
+    this.col          = team.teamColor;
+    this.team = team;
 
     this.startpos     = new PVector(_startpos.x, _startpos.y);
     this.position     = new PVector(this.startpos.x, this.startpos.y);
@@ -35,14 +57,33 @@ class Tank extends Vehicle {
     this.speed        = 0;
     this.maxspeed     = 3;
     this.isInTransition = false;
-  
+    
+    Domain tankDomain = new Domain(25, 25, 775, 775);
+    this.worldDomain(tankDomain, SBF.REBOUND);
+    this.addFSM();
+    this.FSM().setGlobalState(tankGlobalState);
+    this.FSM().changeState(idle);
+    sensor = new Sensor(this, 2, 1);
   }
   
+  public void setIdle(){
+    this.FSM().changeState(idle);
+  }
+  public void returnToBase(){
+    this.FSM().changeState(new TankObserving(3, tankReturnToBaseState));
+  }
+  
+  public void setPatrole(){this.FSM().changeState(tankPatroleState);}
   //======================================
   void checkEnvironment() {
     println("*** Tank.checkEnvironment()");
     
     borders();
+  }
+  
+  void checkNode(){
+    sensor.checkFront();
+  
   }
   
   void checkForCollisions(Tank sprite) {
@@ -51,6 +92,13 @@ class Tank extends Vehicle {
   
   void checkForCollisions(PVector vec) {
     checkEnvironment();
+  }
+  
+  boolean checkEnemyBoundry(PVector pos){
+    if(team.team == Teams.red){
+      return blue.checkBoundry(pos);
+    }
+    return red.checkBoundry(pos);
   }
   
   // Följande är bara ett exempel
