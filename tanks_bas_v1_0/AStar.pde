@@ -160,7 +160,7 @@ class AStar{
       System.out.println(index);
       if(t.team.nav.cells[index] == null){continue;};
       
-      if(!nl.cells[index].isWalkable){
+      if(!t.team.nav.cells[index].isWalkable){
         continue;
       }
       closedList[index] = lowestValueNode;
@@ -182,16 +182,16 @@ class AStar{
           
           if(t.team.nav.cells[neighbourIndex] == null){continue;};
          
-          if(neighbourIndex > nl.size - 1 || neighbourIndex < 0 ){continue;}
+          if(neighbourIndex > t.team.nav.size - 1 || neighbourIndex < 0 ){continue;}
           
-          PVector p = nl.cells[neighbourIndex].pos;
+          PVector p = t.team.nav.cells[neighbourIndex].pos;
           circle(p.x, p.y, 10);
          
           float gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y))/t.team.nav.minRec;
           float heurCost = EuclideanDistance(p, newGoal);
           Node neighbour = new Node(gAcc, heurCost, p);
           neighbour.parent = lowestValueNode;
-          if(!nl.cells[neighbourIndex].isWalkable ){
+          if(!t.team.nav.cells[neighbourIndex].isWalkable ){
              continue;
           }          
           if(neighbour.equals(closedList[neighbourIndex])){
