@@ -82,7 +82,7 @@ public class TankReturnToBaseState extends State{
   
     if(base instanceof Tank){
       Tank t = (Tank)base;
-      if(astar.computeKnowablePath(new PVector((float)t.pos().x, (float)t.pos().y), t.startpos ,nl, t)){
+      if(astar.computeKnowablePath(new PVector((float)t.pos().x, (float)t.pos().y), t.startpos ,null, t)){
         t.AP().pathSetRoute(astar.path);
         t.AP().obstacleAvoidOff();
       }

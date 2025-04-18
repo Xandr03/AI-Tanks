@@ -17,9 +17,9 @@ class Sensor {
 
   void GenerateFrontSightArray() {
 
-    int[] front = new int[]{-nl.mwidth/nl.minRec + 1
+    int[] front = new int[]{-owner.team.nav.mwidth/owner.team.nav.minRec + 1
       , 1
-      , nl.mwidth/nl.minRec + 1};
+      , owner.team.nav.mwidth/owner.team.nav.minRec + 1};
 
     for (int i = 0; i < 3; i++) {
       int currentCell = front[i];
@@ -31,14 +31,14 @@ class Sensor {
   
   
   void checkFront(){
-    int parentIndex = nl.getCellPosition((float)owner.pos().x, (float)owner.pos().y);
+    int parentIndex = owner.team.nav.getCellPosition((float)owner.pos().x, (float)owner.pos().y);
 
-    Cell c = nl.cells[parentIndex];
+    Cell c = owner.team.nav.cells[parentIndex];
     for(int i = 0; i < c.neighboures.size(); i++){ 
       int index =  c.neighboures.get(i);
       System.out.println(index);
-      if(nl.isValidIndex(index)){
-        owner.cellsVisited[index] = nl.getCell(index);  
+      if(owner.team.nav.isValidIndex(index)){
+        owner.team.nav.cells[index] = owner.team.nav.getCell(index);  
       }
       
     }

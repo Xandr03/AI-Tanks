@@ -32,8 +32,7 @@ class Tank extends Vehicle {
   
   Team team;
   
-  
-  Cell[] cellsVisited = new Cell[nl.size];
+ 
   
   //Array of notable item or enemies to update the team base knowledge
   
@@ -71,6 +70,7 @@ class Tank extends Vehicle {
     sensor = new Sensor(this, 2, 1);
     this.path.owner = this;
     
+    /*
     int[] arr = nl.getCellRecArea(5, 14, new PVector(75, 125));
     for(int i = 0; i < 5*14; i++ ){
       int index = arr[i];
@@ -78,6 +78,7 @@ class Tank extends Vehicle {
         cellsVisited[index] = nl.getCell(index);
       }
     }
+    */
   }
   
   public void setIdle(){

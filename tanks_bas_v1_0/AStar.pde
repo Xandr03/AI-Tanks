@@ -139,16 +139,16 @@ class AStar{
   
   boolean computeKnowablePath(PVector start, PVector goal, NavLayout nl, Tank t){
   
-    if(!nl.cells[nl.getCellPosition(goal)].isWalkable) {return false;}
+    if(!t.team.nav.cells[t.team.nav.getCellPosition(goal)].isWalkable) {return false;}
     //open list contains cells that has not been searched.
     //lowest cost first 
     PriorityQueue<Node> openList = new PriorityQueue<Node>();
     //Closed list containt the cells that have already been explored
-    closedList = new Node[nl.size];
+    closedList = new Node[t.team.nav.size];
     visited = new ArrayList<Node>();
     
     
-    PVector newGoal = nl.cells[nl.getCellPosition(goal)].pos;
+    PVector newGoal = t.team.nav.cells[t.team.nav.getCellPosition(goal)].pos;
     
     Node startNode = new Node(0, EuclideanDistance(start, newGoal), start);
     openList.add(startNode);
@@ -156,9 +156,9 @@ class AStar{
     
      
       Node lowestValueNode = openList.poll();
-      int index = nl.getCellPosition(lowestValueNode.position);
-       System.out.println(index);
-      if(t.cellsVisited[index] == null){continue;};
+      int index = t.team.nav.getCellPosition(lowestValueNode.position);
+      System.out.println(index);
+      if(t.team.nav.cells[index] == null){continue;};
       
       if(!nl.cells[index].isWalkable){
         continue;
@@ -166,28 +166,28 @@ class AStar{
       closedList[index] = lowestValueNode;
       
      
-      if(nl.getCellPosition(lowestValueNode.position) == nl.getCellPosition(newGoal)){       
+      if(t.team.nav.getCellPosition(lowestValueNode.position) == t.team.nav.getCellPosition(newGoal)){       
         Node gn = new Node(lowestValueNode.pathCost, lowestValueNode.heuristicCost, goal);
         gn.parent = lowestValueNode.parent;
-        this.path = reconstructPath(gn, nl.minRec);     
+        this.path = reconstructPath(gn, t.team.nav.minRec);     
         hasPath = true;
         return true;
       }
       
-      Cell currentCell = nl.cells[index];
+      Cell currentCell = t.team.nav.cells[index];
      
       
       for(int i = 0; i < currentCell.neighboures.size(); i++){
           int neighbourIndex = currentCell.neighboures.get(i);
           
-          if(t.cellsVisited[neighbourIndex] == null){continue;};
+          if(t.team.nav.cells[neighbourIndex] == null){continue;};
          
           if(neighbourIndex > nl.size - 1 || neighbourIndex < 0 ){continue;}
           
           PVector p = nl.cells[neighbourIndex].pos;
           circle(p.x, p.y, 10);
          
-          float gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y))/nl.minRec;
+          float gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y))/t.team.nav.minRec;
           float heurCost = EuclideanDistance(p, newGoal);
           Node neighbour = new Node(gAcc, heurCost, p);
           neighbour.parent = lowestValueNode;

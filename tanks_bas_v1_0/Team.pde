@@ -9,6 +9,8 @@ class Team  {
   
   
   Cell[] cellInformation;
+  
+  NavLayout nav;
     
   
   int size;
@@ -26,11 +28,11 @@ class Team  {
     this.team = team;
   }
   
-  Team(color teamColor, PVector pos, Teams team, int size){
+  Team(color teamColor, PVector pos, Teams team, NavLayout nav){
     this.position = pos;
     this.teamColor = teamColor;
     this.team = team;
-    this.size = size;
+    this.nav = nav;
   }
   
   void setInformationSize(int size){

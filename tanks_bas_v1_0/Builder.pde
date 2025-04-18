@@ -9,14 +9,14 @@ class Builder{
     
   void manageInput(){
     if(mousePressed && (mouseButton == RIGHT)){
-      int index = nl.getCellPosition(mouseX, mouseY);
+      int index = red.nav.getCellPosition(mouseX, mouseY);
       switch(mode){
         case walls:
         System.out.println("walls");
-        nl.cells[index].isWalkable = false;
+        red.nav.cells[index].isWalkable = false;
         break;
         case air:
-        nl.cells[index].isWalkable = true;
+        red.nav.cells[index].isWalkable = true;
         break;
       }
      }

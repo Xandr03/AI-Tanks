@@ -22,6 +22,7 @@ import game2dai.utils.*;
 import game2dai.graph.*;
 import java.util.*;
 import java.awt.event.KeyEvent;
+import java.util.function.*;
 
 boolean left, right, up, down;
 boolean mouse_pressed;
@@ -57,7 +58,6 @@ StopWatch sw;
 
 Vehicle mover0;
 
-NavLayout nl;
 
  
 AStar astar = new AStar();
@@ -74,13 +74,12 @@ void setup()
   
   //set variables
   frameRate(60);
-  size(800, 800);
-  nl = new NavLayout(775, 775, 25, 25, 25); //<>//
+  size(800, 800); //<>//
   
   world = new World(width, height);
   sw = new StopWatch();
-  blue  = new Team(#004AFF, new PVector(width - 151, height - 351), Teams.blue, nl.size);
-  red = new Team(#F22020, new PVector(0,0), Teams.red, nl.size);
+  blue  = new Team(#004AFF, new PVector(width - 151, height - 351), Teams.blue, new NavLayout(775, 775, 25, 25, 25));
+  red = new Team(#F22020, new PVector(0,0), Teams.red, new NavLayout(775, 775, 25, 25, 25));
   up             = false;
   down           = false;
   mouse_pressed  = false;
@@ -189,7 +188,8 @@ void setup()
    
   
   sw.reset();
-  nl.updateNavLayout(world);
+  red.nav.updateNavLayout(world);
+  blue.nav.updateNavLayout(world);
   
 
 }
@@ -201,7 +201,8 @@ void draw()
   world.update(elapsedtime);
   background(200);
   
-  nl.draw();
+  red.nav.draw();
+  //blue.nav.draw();
   blue.display();
   red.display();
 
@@ -235,11 +236,11 @@ void checkForInput() {
   
       if(mousePressed && (mouseButton == LEFT)){
       
-        int index = nl.getCellPosition(mouseX, mouseY); 
+        int index = red.nav.getCellPosition(mouseX, mouseY); 
         circle(mouseX, mouseY, 5);
-        System.out.println("Is "+ index + " Walkable [" + nl.cells[index].pos+ "]"+ nl.cells[index].isWalkable);
+        System.out.println("Is "+ index + " Walkable [" + red.nav.cells[index].pos+ "]"+ red.nav.cells[index].isWalkable);
            
-        if(astar.computePath(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), nl)){
+        if(astar.computePath(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), red.nav)){
            allTanks[0].AP().pathSetRoute(astar.path);
         }
       
