@@ -7,6 +7,10 @@ public enum Teams{
 class Team  {
   
   
+  
+  //Discovery Array that each tank updates
+  
+  
   PVector position;
   int mwidth = 150;
   int mheight = 350;

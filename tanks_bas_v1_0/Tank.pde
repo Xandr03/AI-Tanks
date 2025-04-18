@@ -35,13 +35,15 @@ class Tank extends Vehicle {
   
   Cell[] cellsVisited = new Cell[nl.size];
   
+  //Array of notable item or enemies to update the team base knowledge
+  
   Sensor sensor;
   
     
  
   //======================================  
   Tank(String _name, PVector _startpos, float _size, Team team ) {
-    super(new Vector2D(_startpos.x, _startpos.y),25, new Vector2D(0,0), 40, new Vector2D(0, 1), 1, 10 ,200);
+    super(new Vector2D(_startpos.x, _startpos.y),25, new Vector2D(0,0), 40, new Vector2D(0, 1), 1, 100 ,200);
     println("*** Tank.Tank()");
     this.name         = _name;
     this.diameter     = _size;
