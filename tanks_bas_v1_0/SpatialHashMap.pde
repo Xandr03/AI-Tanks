@@ -7,6 +7,8 @@ public class Cell{
   public boolean isWalkable = true;
   public float disc = 100;
   
+  public float EnemyDistance = 0;
+  
   
   float getDiscovery(){
     float tempDisc = disc;
@@ -68,7 +70,7 @@ public class NavLayout{
     cells = new Cell[size];
     this.xOffset = xOffset;
     this.yOffset = yOffset;
-    neighbours = new int[] {(-mwidth/minRec),-1, 1, (mwidth/minRec)};
+    neighbours = new int[] {(-mwidth/minRec + 1), (-mwidth/minRec), (-mwidth/minRec - 1), -1, 1, (mwidth/minRec - 1), (mwidth/minRec), (mwidth/minRec + 1)};
     //{(-mwidth/minRec + 1), (-mwidth/minRec), (-mwidth/minRec - 1), -1, 1, (mwidth/minRec - 1), (mwidth/minRec), (mwidth/minRec + 1)};
     GenerateLayout();
     
@@ -87,7 +89,7 @@ public class NavLayout{
       
       for(int i = 0; i < size; i++){
         
-        for(int j = 0; j < 4; j++){
+        for(int j = 0; j < 8; j++){
           int neighbourIndex = abs(i + neighbours[j]);
           if(neighbourIndex > size - 1 || neighbourIndex < 0 ){continue;}
           if(dist(cells[neighbourIndex].pos.x, cells[neighbourIndex].pos.y, cells[i].pos.x, cells[i].pos.y) < sqrt(pow(minRec, 2) + pow(minRec, 2)) + rounder){
@@ -191,6 +193,24 @@ public class NavLayout{
     }
     return true;
   
+  }
+  
+  
+  int[] getCellRecArea(int w, int h, PVector centerPoint){
+  
+    int[] arr = new int[w*h];
+    
+    PVector tl = new PVector(centerPoint.x - (minRec * w), centerPoint.y -( minRec*h));
+    
+    int total = 0;
+    for(int i = 0; i < h; i++){
+      int index = getCellPosition(tl.x, tl.y) + i * mwidth/minRec;
+      for(int j = 0; j < w; j++){
+        arr[total] = index + j;
+        total++;
+      }
+    }
+    return arr;
   }
   
   

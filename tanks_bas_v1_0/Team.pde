@@ -8,7 +8,10 @@ class Team  {
   
   
   
-  //Discovery Array that each tank updates
+  Cell[] cellInformation;
+    
+  
+  int size;
   
   
   PVector position;
@@ -21,7 +24,18 @@ class Team  {
     this.position = pos;
     this.teamColor = teamColor;
     this.team = team;
-    
+  }
+  
+  Team(color teamColor, PVector pos, Teams team, int size){
+    this.position = pos;
+    this.teamColor = teamColor;
+    this.team = team;
+    this.size = size;
+  }
+  
+  void setInformationSize(int size){
+    cellInformation = new Cell[size];
+    this.size = size;
   }
   
   public boolean checkBoundry(PVector other){

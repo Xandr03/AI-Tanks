@@ -31,9 +31,11 @@ class Sensor {
   
   
   void checkFront(){
-     float angle = PApplet.atan2((float)owner.heading().x, (float)owner.heading().y);
-    for(int i = 0; i < frontSightArray.size(); i++){ 
-      int index = abs(nl.getCellPosition((float)owner.pos().x, (float)owner.pos().y)+ frontSightArray.get(i));   
+    int parentIndex = nl.getCellPosition((float)owner.pos().x, (float)owner.pos().y);
+
+    Cell c = nl.cells[parentIndex];
+    for(int i = 0; i < c.neighboures.size(); i++){ 
+      int index =  c.neighboures.get(i);
       System.out.println(index);
       if(nl.isValidIndex(index)){
         owner.cellsVisited[index] = nl.getCell(index);  

@@ -73,13 +73,14 @@ void setup()
 {
   
   //set variables
+  frameRate(60);
   size(800, 800);
   nl = new NavLayout(775, 775, 25, 25, 25); //<>//
   
   world = new World(width, height);
   sw = new StopWatch();
-  blue  = new Team(#004AFF, new PVector(width - 151, height - 351), Teams.blue);
-  red = new Team(#F22020, new PVector(0,0), Teams.red);
+  blue  = new Team(#004AFF, new PVector(width - 151, height - 351), Teams.blue, nl.size);
+  red = new Team(#F22020, new PVector(0,0), Teams.red, nl.size);
   up             = false;
   down           = false;
   mouse_pressed  = false;
@@ -175,7 +176,9 @@ void setup()
   world.add(tank5);
 
   
-   allTanks[0] = tank0;                         // Symbol samma som index!
+   allTanks[0] = tank0;           
+   // Symbol samma som index!
+ 
    allTanks[1] = tank1;
    allTanks[2] = tank2;
    allTanks[3] = tank3;

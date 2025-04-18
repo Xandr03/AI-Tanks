@@ -3,6 +3,7 @@ class AStar{
   
   
   LinkedList<GraphNode> path;
+  LinkedList<Cell> path2;
   boolean hasPath = false;
   int pathSize = 0;
   
@@ -77,7 +78,7 @@ class AStar{
     openList.add(startNode);
     while(!openList.isEmpty()){
     
-      System.out.println(openList.peek().sum);
+      //System.out.println(openList.peek().sum);
       Node lowestValueNode = openList.poll();
       int index = nl.getCellPosition(lowestValueNode.position);
       if(!nl.cells[index].isWalkable){
@@ -89,7 +90,8 @@ class AStar{
       if(nl.getCellPosition(lowestValueNode.position) == nl.getCellPosition(newGoal)){       
         Node gn = new Node(lowestValueNode.pathCost, lowestValueNode.heuristicCost, goal);
         gn.parent = lowestValueNode.parent;
-        this.path = reconstructPath(gn, nl.minRec);     
+        this.path = reconstructPath(gn, nl.minRec);    
+        this.path2 = reconstructPathCell(gn, nl.minRec);
         hasPath = true;
         return true;
       }
@@ -343,6 +345,18 @@ class AStar{
     }
   
     return path;
+  }
+  
+  LinkedList<Cell> reconstructPathCell(Node current, int cellSize){
+    
+    LinkedList<Cell> p = new LinkedList<>();
+    int id = 0;
+    while(current != null){
+      p.addFirst(new Cell(current.position, false));
+      current = current.parent;
+    }
+  
+    return p;
   }
   
   float distance(PVector current, PVector other){

@@ -39,6 +39,9 @@ class Tank extends Vehicle {
   
   Sensor sensor;
   
+  
+  Path path = new Path();
+  
     
  
   //======================================  
@@ -57,7 +60,7 @@ class Tank extends Vehicle {
     
     this.state        = 0; //0(still), 1(moving)
     this.speed        = 0;
-    this.maxspeed     = 3;
+    this.maxspeed     = 20;
     this.isInTransition = false;
     
     Domain tankDomain = new Domain(25, 25, 775, 775);
@@ -66,6 +69,15 @@ class Tank extends Vehicle {
     this.FSM().setGlobalState(tankGlobalState);
     this.FSM().changeState(idle);
     sensor = new Sensor(this, 2, 1);
+    this.path.owner = this;
+    
+    int[] arr = nl.getCellRecArea(5, 14, new PVector(75, 125));
+    for(int i = 0; i < 5*14; i++ ){
+      int index = arr[i];
+      if(nl.isValidIndex(index)){
+        cellsVisited[index] = nl.getCell(index);
+      }
+    }
   }
   
   public void setIdle(){
@@ -114,7 +126,7 @@ class Tank extends Vehicle {
   
   void update(double deltaTime, World world){
     super.update(deltaTime, world);
-    
+     
   }
   
   
@@ -170,6 +182,7 @@ class Tank extends Vehicle {
   
   void update() {
     println("*** Tank.update()");
+  
     
     switch (state) {
       case 0:
