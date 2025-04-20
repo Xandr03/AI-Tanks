@@ -148,9 +148,9 @@ void setup()
   blueTank.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
   
 
-  tank0 = new Tank("tank0", team0_tank0_startpos,tank_size, red );
-  tank1 = new Tank("tank1", team0_tank1_startpos,tank_size, red );
-  tank2 = new Tank("tank2", team0_tank2_startpos,tank_size, red );
+  tank0 = new Tank("tank0", team0_tank0_startpos,tank_size, red, blue );
+  tank1 = new Tank("tank1", team0_tank1_startpos,tank_size, red, blue );
+  tank2 = new Tank("tank2", team0_tank2_startpos,tank_size, red, blue );
   
   tank0.renderer(blueTank);
   tank1.renderer(blueTank);
@@ -159,9 +159,9 @@ void setup()
   
   TankPic redTank = new TankPic(this, 50, team1Color);
   redTank.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
-  tank3 = new Tank("tank3", team1_tank0_startpos,tank_size, blue );
-  tank4 = new Tank("tank4", team1_tank1_startpos,tank_size, blue );
-  tank5 = new Tank("tank5", team1_tank2_startpos,tank_size, blue );
+  tank3 = new Tank("tank3", team1_tank0_startpos,tank_size, blue, red);
+  tank4 = new Tank("tank4", team1_tank1_startpos,tank_size, blue, red);
+  tank5 = new Tank("tank5", team1_tank2_startpos,tank_size, blue, red);
  
   tank3.renderer(redTank);
   tank4.renderer(redTank);
@@ -200,6 +200,8 @@ void draw()
   double elapsedtime = sw.getElapsedTime();
   world.update(elapsedtime);
   background(200);
+  
+  
   
   red.nav.draw();
   //blue.nav.draw();

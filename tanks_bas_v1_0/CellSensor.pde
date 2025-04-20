@@ -38,7 +38,7 @@ class Sensor {
       int index =  c.neighboures.get(i);
       System.out.println(index);
       if(owner.team.nav.isValidIndex(index)){
-        owner.team.nav.cells[index] = owner.team.nav.getCell(index);  
+        owner.team.nav.cells[index].visited = true;
       }
       
     }

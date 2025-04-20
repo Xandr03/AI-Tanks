@@ -31,10 +31,12 @@ class Tank extends Vehicle {
   boolean isInTransition;
   
   Team team;
-  
+  Team oposition;
  
   
   //Array of notable item or enemies to update the team base knowledge
+  
+  ArrayList<Cell> reportCells = new ArrayList<>();
   
   Sensor sensor;
   
@@ -44,7 +46,7 @@ class Tank extends Vehicle {
     
  
   //======================================  
-  Tank(String _name, PVector _startpos, float _size, Team team ) {
+  Tank(String _name, PVector _startpos, float _size, Team team, Team oposition ) {
     super(new Vector2D(_startpos.x, _startpos.y),25, new Vector2D(0,0), 40, new Vector2D(0, 1), 1, 100 ,200);
     println("*** Tank.Tank()");
     this.name         = _name;
@@ -53,7 +55,7 @@ class Tank extends Vehicle {
     this.team = team;
 
     this.startpos     = new PVector(_startpos.x, _startpos.y);
-    this.position     = new PVector(this.startpos.x, this.startpos.y);
+
     this.velocity     = new PVector(0, 0);
     this.acceleration = new PVector(0, 0);
     
@@ -67,18 +69,46 @@ class Tank extends Vehicle {
     this.addFSM();
     this.FSM().setGlobalState(tankGlobalState);
     this.FSM().changeState(idle);
+    
     sensor = new Sensor(this, 2, 1);
     this.path.owner = this;
+    team.tanks.add(this);
+    this.oposition = oposition;
     
-    /*
-    int[] arr = nl.getCellRecArea(5, 14, new PVector(75, 125));
-    for(int i = 0; i < 5*14; i++ ){
+   
+  
+  /*
+  int[] arr = team.nav.getCellRecArea(5, 3, new PVector(750,550));
+    for(int i = 0; i < 3*5; i++ ){
       int index = arr[i];
-      if(nl.isValidIndex(index)){
-        cellsVisited[index] = nl.getCell(index);
+      if(team.nav.isValidIndex(index)){
+        team.nav.cells[index].isEnemyBase = true;
       }
     }
     */
+  }
+  
+  public void report(){
+    team.report(reportCells);
+    reportCells = new ArrayList<Cell>();
+  }
+  
+  public boolean EnemyInVision(){
+    
+    boolean found = false;
+    for(int i = 0; i < oposition.tanks.size(); i++){
+    
+      PVector opTank = new PVector((float)oposition.tanks.get(i).pos().x, (float)oposition.tanks.get(i).pos().y);
+      int angle = round(VecMath.dotAngle(new PVector((float)heading().x,(float)heading().y), VecMath.normalize(VecMath.direction((float)heading().x,(float)heading().y,opTank.x,opTank.y))));
+      float dist = dist((float)pos().x, (float)pos().y, opTank.x, opTank.y);
+      if(angle> 5 && dist <= 200){
+        Cell enemyCell = new Cell(team.nav.getCell(team.nav.getCellPosition(opTank)).pos, true);
+        enemyCell.isEnemyNearby = true;
+        reportCells.add(enemyCell);
+        found = true;
+      }
+    }
+    return found;
   }
   
   public void setIdle(){

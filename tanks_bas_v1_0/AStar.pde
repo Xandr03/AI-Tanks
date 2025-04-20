@@ -16,6 +16,7 @@ class AStar{
     float heuristicCost;
     float sum;
     PVector position;
+    int id;
     Node parent;
     
     
@@ -25,6 +26,15 @@ class AStar{
       this.sum = pathCost + heuristicCost;
       this.position = position;
       this.parent = null;
+    }
+    
+    Node(int id, float pathCost, float heuristicCost, PVector position){
+      this.pathCost = pathCost;
+      this.heuristicCost = heuristicCost;
+      this.sum = pathCost + heuristicCost;
+      this.position = position;
+      this.parent = null;
+      this.id = id;
     }
     
 
@@ -107,7 +117,7 @@ class AStar{
           
           PVector p = nl.cells[neighbourIndex].pos;
          
-          float gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y))/nl.minRec;
+          float gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y));
           float heurCost = EuclideanDistance(p, newGoal);
           Node neighbour = new Node(gAcc, heurCost, p);
           neighbour.parent = lowestValueNode;
@@ -179,8 +189,9 @@ class AStar{
       
       for(int i = 0; i < currentCell.neighboures.size(); i++){
           int neighbourIndex = currentCell.neighboures.get(i);
+          if(!t.team.nav.isValidIndex(neighbourIndex)){continue;}
           
-          if(t.team.nav.cells[neighbourIndex] == null){continue;};
+          if(!t.team.nav.cells[neighbourIndex].visited){continue;};
          
           if(neighbourIndex > t.team.nav.size - 1 || neighbourIndex < 0 ){continue;}
           
@@ -216,18 +227,17 @@ class AStar{
   }
   
   //Weighted based on discovery
-  boolean computeStep(PVector start, float discoverGoal, int maxSteps, NavLayout nl){
+  boolean computeStep(PVector start, float distance, Team t){
   
   
        //open list contains cells that has not been searched.
     //lowest cost first 
-    PriorityQueue<Node> openList = new PriorityQueue<Node>(Collections.reverseOrder());
+    PriorityQueue<Node> openList = new PriorityQueue<Node>();
     //Closed list containt the cells that have already been explored
-    closedList = new Node[nl.size];
+    closedList = new Node[t.nav.size];
     visited = new ArrayList<Node>();
     
     float totalDiscoveryCost = 0;
-    int acceptCount = 0;
     
     Node startNode = new Node(0, discovery(totalDiscoveryCost, 0), start);
     openList.add(startNode);
@@ -236,46 +246,50 @@ class AStar{
       
       System.out.println(openList.peek().sum);
       Node lowestValueNode = openList.poll();
-      if(acceptCount > 0){
-         maxSteps--;
-      }
-      
-      int index = nl.getCellPosition(lowestValueNode.position);
-      if(!nl.cells[abs(index)].isWalkable){
-        continue;
+
+
+      int index = t.nav.getCellPosition(lowestValueNode.position);
+      if(!t.nav.cells[abs(index)].isWalkable){
+        return false;
       }
       closedList[index] = lowestValueNode;
       
      
-      if(totalDiscoveryCost >= discoverGoal || maxSteps <= 0){       
-        this.path = reconstructPath(lowestValueNode, nl.minRec);     
+      if(dist(start.x, start.y, lowestValueNode.position.x, lowestValueNode.position.y) >= distance){       
+        this.path = reconstructPath(lowestValueNode, t.nav.minRec);     
         hasPath = true;
         return true;
       }
       
-      Cell currentCell = nl.cells[abs(index)];
+      Cell currentCell = t.nav.cells[abs(index)];
+
      
       
       for(int i = 0; i < currentCell.neighboures.size(); i++){
           int neighbourIndex = currentCell.neighboures.get(i);
-        
-           
-          if(neighbourIndex > nl.size - 1 || neighbourIndex < 0 ){continue;}
+          Cell c = t.nav.getCell(neighbourIndex);
+          if(!c.isWalkable || c.isEnemyNearby || c.isEnemyBase ){
+            continue;
+          }
           
-          PVector p = nl.cells[neighbourIndex].pos;
+          PVector p = t.nav.cells[neighbourIndex].pos;
          
-          float gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y))/nl.minRec;
-          float heurCost = discovery(totalDiscoveryCost, nl.cells[neighbourIndex].getDiscovery());
-          Node neighbour = new Node(0, heurCost, p);
+          float gAcc = 0;
+          if(t.nav.getCell(neighbourIndex).visited){
+             gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y))/t.nav.minRec;
+          }
+          
+          double heurCost =  sw.getRunTime() - t.nav.cells[neighbourIndex].timeSinceLastVisit + random(10);
+          Node neighbour = new Node(neighbourIndex, gAcc, (float)heurCost, p);
           totalDiscoveryCost += neighbour.sum;
           neighbour.parent = lowestValueNode;
-          if(!nl.cells[neighbourIndex].isWalkable || nl.cells[neighbourIndex].disc <= 0 ){
+          if(!t.nav.cells[neighbourIndex].isWalkable){
              continue;
           }
           if(neighbour.equals(closedList[neighbourIndex])){
             continue;
           }
-          acceptCount++;
+
           visited.add(neighbour);
           
           openList.add(neighbour);
@@ -299,7 +313,7 @@ class AStar{
       if(!hasPath){
         return;
       }
-      /*
+         /*
       for(int i = 0; i < visited.size(); i++){
           Vector2D point = new Vector2D(visited.get(i).position.x ,visited.get(i).position.y);
           blendMode(REPLACE);
@@ -310,7 +324,7 @@ class AStar{
       }  
       
 
-    
+ 
      for(int i = 0; i < closedList.size(); i++){
         Vector2D point = new Vector2D(closedList.get(i).position.x ,closedList.get(i).position.y);
         fill(color(255,0,0), 100);
@@ -340,6 +354,19 @@ class AStar{
     LinkedList<GraphNode> path = new LinkedList<>();
     int id = 0;
     while(current != null){
+      path.addFirst(new GraphNode(id++,current.position.x, current.position.y));
+      current = current.parent;
+    }
+  
+    return path;
+  }
+  
+  LinkedList<GraphNode> reconstructPathWithTime(Node current, NavLayout nl){
+    
+    LinkedList<GraphNode> path = new LinkedList<>();
+    int id = 0;
+    while(current != null){
+      nl.cells[current.id].timeSinceLastVisit = sw.getRunTime();
       path.addFirst(new GraphNode(id++,current.position.x, current.position.y));
       current = current.parent;
     }

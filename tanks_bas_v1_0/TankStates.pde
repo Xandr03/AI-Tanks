@@ -4,9 +4,11 @@ public class TankPatroleState extends State{
 
   public void enter(BaseEntity base){
    if(base instanceof Vehicle){
-     //Vehicle v = (Vehicle)base;
+     Vehicle v = (Vehicle)base;
      //v.AP().wanderOn().wanderFactors(60, 30, 20);
      //v.AP().obstacleAvoidOn();
+     //v.AP().separationOn();
+     //v.AP().separationWeight(70); 
    }  
   }
   
@@ -16,11 +18,17 @@ public class TankPatroleState extends State{
       
       Tank t = (Tank)base;
     
-      if(t.checkEnemyBoundry((new PVector((float)base.pos().x, (float)base.pos().y)))){
+      if(t.checkEnemyBoundry((new PVector((float)base.pos().x, (float)base.pos().y))) && t.EnemyInVision() ){
+        Cell enemyBaseCell = new Cell(new PVector(0,0),false);
+        enemyBaseCell.isEnemyBase = true;
+        t.reportCells.add(enemyBaseCell);
         t.returnToBase();
       }
-      
-      t.checkNode();
+      if(t.AP().pathRouteLength() <= 0){
+        if(astar.computeStep(new PVector((float)t.pos().x, (float)t.pos().y), 100, t.team)){
+          t.AP().pathSetRoute(astar.path);
+        }
+      }
        
     }
   }
@@ -91,7 +99,19 @@ public class TankReturnToBaseState extends State{
   }
   @Override
   public void execute(BaseEntity base, double deltaTime, World world){
-  
+    if(base instanceof Tank){
+       
+      Tank t = (Tank)base;
+      
+      if(t.AP().pathRouteLength() <= 0){
+
+        t.FSM().changeState(tankPatroleState);
+        
+        t.report();
+      }
+
+       
+    }
   
   }
   @Override
@@ -138,7 +158,12 @@ public class TankGlobalState extends State{
   }
   
   public void execute(BaseEntity base, double deltaTime, World world){
-  
+      if(base instanceof Tank){
+      
+      Tank t = (Tank)base;
+      t.checkNode();
+       
+    }
   
   }
   

@@ -5,18 +5,14 @@ public class Cell {
 
   public PVector pos;
   public boolean isWalkable = true;
-  public float disc = 100;
+
 
   public float EnemyDistance = 0;
   public boolean isEnemyNearby = false;
   public boolean isEnemyBase = false;
+  public boolean visited = false;
 
-
-  float getDiscovery() {
-    float tempDisc = disc;
-    disc -= 25;
-    return tempDisc;
-  }
+  public double timeSinceLastVisit = 0;
 
   //fix the neighobure so a a left side is connected to the right, with this it wrapes
   ArrayList<Integer> neighboures = new ArrayList<>();
@@ -118,12 +114,13 @@ public class NavLayout {
       Cell p = cells[i];
       float reach = 100;
       float dist = dist(p.pos.x, p.pos.y, c.pos.x, c.pos.y);
+      float time = (float)((p.timeSinceLastVisit - sw.getRunTime())/sw.getRunTime());
       if (p.isWalkable) {
 
         stroke(max(0, 1 - dist/reach));
         strokeWeight(max(0, 1 - dist/reach));
 
-        fill(#12FA36, 100 - dist);
+        fill(#9CF5ED, 100 - dist);
         rect(p.pos.x, p.pos.y, minRec, minRec);
         fill(#36E85E, max(30, 100 - dist));
         rect(p.pos.x, p.pos.y, minRec, minRec);
@@ -153,6 +150,7 @@ public class NavLayout {
     if (!c.isWalkable) {
       fill(color(#F21818), 100);
     }
+
     square(c.pos.x, c.pos.y, minRec*1.2);
     text(getCellPosition(mouseX, mouseY), c.pos.x, c.pos.y);
 
@@ -165,10 +163,15 @@ public class NavLayout {
 
 
   void DrawTank0PathsFound() {
-    Cell[] cs = allTanks[0].team.nav.cells;
+
     for (int i = 0; i < size; i++) {
       Cell p = cells[i];
-      if (cs[i] == cells[i]) {
+      if (p.isEnemyNearby || p.isEnemyBase) {
+        fill(color(0, 0, 0), 60);
+        rect(p.pos.x, p.pos.y, minRec, minRec);
+        continue;
+      }
+      if (cells[i].visited) {
         fill(#AE14FC, 50);
         rect(p.pos.x, p.pos.y, minRec, minRec);
       }
@@ -195,14 +198,18 @@ public class NavLayout {
 
     int[] arr = new int[w*h];
 
-    PVector tl = new PVector(centerPoint.x - (minRec * w), centerPoint.y -( minRec*h));
+    PVector tl = new PVector(centerPoint.x - (minRec * w/2), centerPoint.y -( minRec*h/2));
 
     int total = 0;
     for (int i = 0; i < h; i++) {
-      int index = getCellPosition(tl.x, tl.y) + i * mwidth/minRec;
+      //int index = getCellPosition(tl.x, tl.y) + i * mwidth/minRec;
+      PVector pos = new PVector(tl.x, tl.y + i * minRec);
       for (int j = 0; j < w; j++) {
-        arr[total] = index + j;
-        total++;
+        int n = getCellPosition(new PVector(pos.x + j * minRec, pos.y));
+        if (isValidIndex(n)) {
+          arr[total] = n;
+          total++;
+        }
       }
     }
     return arr;
@@ -214,8 +221,10 @@ public class NavLayout {
 
     for (int i = 0; i < h; i++) {
       int index = getCellPosition(tl.x, tl.y) + i * mwidth/minRec;
+      PVector pos = new PVector(tl.x, tl.y + i * mwidth/minRec);
       for (int j = 0; j < w; j++) {
-        if (isValidIndex(index)) {
+        int n = getCellPosition(new PVector(pos.x + j * minRec, pos.y));
+        if (isValidIndex(n)) {
           cellCon.accept(getCell(index));
         }
       }
@@ -254,8 +263,8 @@ public class NavLayout {
     }
 
 
-    int newX = floor((fixed.x - xOffset + (minRec/2))/minRec);
-    int newY = floor((fixed.y - yOffset + (minRec/2))/minRec);
+    int newX = floor((fixed.x - (minRec/2))/minRec);
+    int newY = floor((fixed.y - (minRec/2))/minRec);
 
     //System.out.println("newX : " + newX + " newY : " + newY);
 
