@@ -192,20 +192,18 @@ class AStar{
           if(!t.team.nav.isValidIndex(neighbourIndex)){continue;}
           
           if(!t.team.nav.cells[neighbourIndex].visited){continue;};
-         
-          if(neighbourIndex > t.team.nav.size - 1 || neighbourIndex < 0 ){continue;}
+
           
           PVector p = t.team.nav.cells[neighbourIndex].pos;
-          circle(p.x, p.y, 10);
          
-          float gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y))/t.team.nav.minRec;
+          float gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y));
           float heurCost = EuclideanDistance(p, newGoal);
           Node neighbour = new Node(gAcc, heurCost, p);
           neighbour.parent = lowestValueNode;
           if(!t.team.nav.cells[neighbourIndex].isWalkable ){
              continue;
           }          
-          if(neighbour.equals(closedList[neighbourIndex])){
+          if(closedList[neighbourIndex] != null){
             continue;
           }
           visited.add(neighbour);
@@ -274,12 +272,12 @@ class AStar{
           
           PVector p = t.nav.cells[neighbourIndex].pos;
          
-          float gAcc = 0;
+          float gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y))/t.nav.minRec;
           if(t.nav.getCell(neighbourIndex).visited){
-             gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y))/t.nav.minRec;
+             gAcc += random(10);
           }
           
-          double heurCost =  sw.getRunTime() - t.nav.cells[neighbourIndex].timeSinceLastVisit + random(10);
+          double heurCost = t.nav.cells[neighbourIndex].timeSinceLastVisit -  sw.getRunTime()  + random(10);
           Node neighbour = new Node(neighbourIndex, gAcc, (float)heurCost, p);
           totalDiscoveryCost += neighbour.sum;
           neighbour.parent = lowestValueNode;

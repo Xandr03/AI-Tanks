@@ -115,7 +115,7 @@ class Tank extends Vehicle {
     this.FSM().changeState(idle);
   }
   public void returnToBase(){
-    this.FSM().changeState(new TankObserving(3, tankReturnToBaseState));
+    this.FSM().changeState(tankReturnToBaseState);
   }
   
   public void setPatrole(){this.FSM().changeState(tankPatroleState);}

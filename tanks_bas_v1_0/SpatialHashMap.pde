@@ -121,9 +121,9 @@ public class NavLayout {
         strokeWeight(max(0, 1 - dist/reach));
 
         fill(#9CF5ED, 100 - dist);
-        rect(p.pos.x, p.pos.y, minRec, minRec);
+        //rect(p.pos.x, p.pos.y, minRec, minRec);
         fill(#36E85E, max(30, 100 - dist));
-        rect(p.pos.x, p.pos.y, minRec, minRec);
+       // rect(p.pos.x, p.pos.y, minRec, minRec);
       } else {
         strokeWeight(max(0, 1 - dist/reach));
         stroke(max(0, 1 - dist/reach));
@@ -163,19 +163,24 @@ public class NavLayout {
 
 
   void DrawTank0PathsFound() {
-
+     
     for (int i = 0; i < size; i++) {
       Cell p = cells[i];
       if (p.isEnemyNearby || p.isEnemyBase) {
-        fill(color(0, 0, 0), 60);
+        fill(#F01616,100);
         rect(p.pos.x, p.pos.y, minRec, minRec);
         continue;
       }
+      
       if (cells[i].visited) {
-        fill(#AE14FC, 50);
+        float time = (float)((sw.getRunTime() - p.timeSinceLastVisit)/sw.getRunTime());
+       
+        fill(#AE14FC,100 - 100*time);
         rect(p.pos.x, p.pos.y, minRec, minRec);
       }
+      
     }
+  
   }
 
 

@@ -39,6 +39,7 @@ class Sensor {
       System.out.println(index);
       if(owner.team.nav.isValidIndex(index)){
         owner.team.nav.cells[index].visited = true;
+        owner.team.nav.cells[index].timeSinceLastVisit = sw.getRunTime();
       }
       
     }
