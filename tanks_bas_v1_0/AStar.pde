@@ -274,7 +274,7 @@ class AStar{
          
           float gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y))/t.nav.minRec;
           if(t.nav.getCell(neighbourIndex).visited){
-             gAcc += random(10);
+             gAcc *= 1.5;
           }
           
           double heurCost = t.nav.cells[neighbourIndex].timeSinceLastVisit -  sw.getRunTime()  + random(10);
@@ -284,7 +284,7 @@ class AStar{
           if(!t.nav.cells[neighbourIndex].isWalkable){
              continue;
           }
-          if(neighbour.equals(closedList[neighbourIndex])){
+          if(closedList[neighbourIndex] != null){
             continue;
           }
 
