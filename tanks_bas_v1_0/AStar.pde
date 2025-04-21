@@ -124,7 +124,7 @@ class AStar{
           if(!nl.cells[neighbourIndex].isWalkable ){
              continue;
           }          
-          if(neighbour.equals(closedList[neighbourIndex])){
+          if(closedList[neighbourIndex] != null){
             continue;
           }
           visited.add(neighbour);
