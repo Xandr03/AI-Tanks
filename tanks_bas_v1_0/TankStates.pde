@@ -25,8 +25,9 @@ public class TankPatroleState extends State{
         t.returnToBase();
       }
       if(t.AP().pathRouteLength() <= 0){
-        if(astar.computeStep(new PVector((float)t.pos().x, (float)t.pos().y), 100, t.team)){
-          t.AP().pathSetRoute(astar.path);
+        if(bFS.computeStep(new PVector((float)t.pos().x, (float)t.pos().y), 100, t.team)){
+          t.velocity(new Vector2D(0,0));
+          //t.AP().pathSetRoute(astar.path);
         }
       }
        
@@ -90,8 +91,8 @@ public class TankReturnToBaseState extends State{
   
     if(base instanceof Tank){
       Tank t = (Tank)base;
-      if(astar.computeKnowablePath(new PVector((float)t.pos().x, (float)t.pos().y), t.startpos ,null, t)){
-        t.AP().pathSetRoute(astar.path);
+      if(bFS.computeKnowablePath(new PVector((float)t.pos().x, (float)t.pos().y), t.startpos ,null, t)){
+        t.AP().pathSetRoute(bFS.path);
         t.AP().obstacleAvoidOff();
       }
     }

@@ -60,7 +60,7 @@ Vehicle mover0;
 
 
  
-AStar astar = new AStar();
+BestFirstSearch bFS = new BestFirstSearch();
 
 Team red;
 Team blue;
@@ -229,7 +229,7 @@ void draw()
 
  
   world.draw(elapsedtime);
-  astar.draw();
+  bFS.draw();
 
 }
 
@@ -242,8 +242,8 @@ void checkForInput() {
         circle(mouseX, mouseY, 5);
         System.out.println("Is "+ index + " Walkable [" + red.nav.cells[index].pos+ "]"+ red.nav.cells[index].isWalkable);
            
-        if(astar.computePath(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), red.nav, AStar.ASTAR)){
-           allTanks[0].AP().pathSetRoute(astar.path);
+        if(bFS.computePath(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), red.nav, BestFirstSearch.ASTAR)){
+           allTanks[0].AP().pathSetRoute(bFS.path);
         }
       
       }

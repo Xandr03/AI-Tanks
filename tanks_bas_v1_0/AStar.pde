@@ -1,5 +1,5 @@
 
-class AStar{
+class BestFirstSearch{
   
  static final int ASTAR = 100;
  static final int GREEDY = 101;
@@ -8,7 +8,8 @@ class AStar{
   
   
   LinkedList<GraphNode> path;
-  LinkedList<Cell> path2;
+  
+
   boolean hasPath = false;
   int pathSize = 0;
   
@@ -327,7 +328,7 @@ class AStar{
       if(!hasPath){
         return;
       }
-         /*
+     
       for(int i = 0; i < visited.size(); i++){
           Vector2D point = new Vector2D(visited.get(i).position.x ,visited.get(i).position.y);
           blendMode(REPLACE);
@@ -338,7 +339,7 @@ class AStar{
       }  
       
 
- 
+     /*
      for(int i = 0; i < closedList.size(); i++){
         Vector2D point = new Vector2D(closedList.get(i).position.x ,closedList.get(i).position.y);
         fill(color(255,0,0), 100);
@@ -419,6 +420,7 @@ class AStar{
      return sqrt(pow(current.x - goal.x, 2) + pow(current.y - goal.y, 2));
   }
   
-
+  
+  LinkedList<Cell> path2;
   
 }

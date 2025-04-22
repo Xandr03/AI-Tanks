@@ -4,13 +4,14 @@
 public class Cell {
 
   public PVector pos;
+  public boolean visited = false;
   public boolean isWalkable = true;
 
 
   public float EnemyDistance = 0;
   public boolean isEnemyNearby = false;
   public boolean isEnemyBase = false;
-  public boolean visited = false;
+  
 
   public double timeSinceLastVisit = 0;
 
