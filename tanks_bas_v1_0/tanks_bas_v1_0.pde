@@ -242,7 +242,7 @@ void checkForInput() {
         circle(mouseX, mouseY, 5);
         System.out.println("Is "+ index + " Walkable [" + red.nav.cells[index].pos+ "]"+ red.nav.cells[index].isWalkable);
            
-        if(astar.computePath(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), red.nav)){
+        if(astar.computePath(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), red.nav, AStar.ASTAR)){
            allTanks[0].AP().pathSetRoute(astar.path);
         }
       

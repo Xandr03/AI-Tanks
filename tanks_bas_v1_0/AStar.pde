@@ -1,6 +1,11 @@
 
 class AStar{
   
+ static final int ASTAR = 100;
+ static final int GREEDY = 101;
+ static final int DIJKSTRA = 102;
+
+  
   
   LinkedList<GraphNode> path;
   LinkedList<Cell> path2;
@@ -71,7 +76,7 @@ class AStar{
 
   }
   
-  boolean computePath(PVector start, PVector goal, NavLayout nl){
+  boolean computePath(PVector start, PVector goal, NavLayout nl, int SearchType){
   
     if(!nl.cells[nl.getCellPosition(goal)].isWalkable) {return false;}
     //open list contains cells that has not been searched.
@@ -117,8 +122,8 @@ class AStar{
           
           PVector p = nl.cells[neighbourIndex].pos;
          
-          float gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x,lowestValueNode.position.y));
-          float heurCost = EuclideanDistance(p, newGoal);
+          float gAcc = g(lowestValueNode, p, SearchType);
+          float heurCost = h(p, newGoal, SearchType);
           Node neighbour = new Node(gAcc, heurCost, p);
           neighbour.parent = lowestValueNode;
           if(!nl.cells[neighbourIndex].isWalkable ){
@@ -143,6 +148,17 @@ class AStar{
     
 
 
+  }
+  
+  float g(Node parent, PVector child, int SearchType){
+      if(SearchType != DIJKSTRA && SearchType != ASTAR){return 0;}
+      float gAcc = parent.pathCost + abs(dist(child.x, child.y, parent.position.x,parent.position.y));
+      return gAcc;
+  }
+  
+  float h(PVector posNode, PVector posGoal, int SearchType){
+      if(SearchType != ASTAR && SearchType != GREEDY){return 0;}
+      return EuclideanDistance(posNode, posGoal);
   }
   
   
