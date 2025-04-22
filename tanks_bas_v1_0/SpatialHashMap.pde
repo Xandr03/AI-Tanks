@@ -121,9 +121,9 @@ public class NavLayout {
         strokeWeight(max(0, 1 - dist/reach));
 
         fill(#9CF5ED, 100 - dist);
-        //rect(p.pos.x, p.pos.y, minRec, minRec);
+        rect(p.pos.x, p.pos.y, minRec, minRec);
         fill(#36E85E, max(30, 100 - dist));
-       // rect(p.pos.x, p.pos.y, minRec, minRec);
+        rect(p.pos.x, p.pos.y, minRec, minRec);
       } else {
         strokeWeight(max(0, 1 - dist/reach));
         stroke(max(0, 1 - dist/reach));
