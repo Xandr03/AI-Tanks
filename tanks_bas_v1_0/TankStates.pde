@@ -27,7 +27,7 @@ public class TankPatroleState extends State{
       if(t.AP().pathRouteLength() <= 0){
         if(bFS.computeStep(new PVector((float)t.pos().x, (float)t.pos().y), 100, t.team)){
           t.velocity(new Vector2D(0,0));
-          //t.AP().pathSetRoute(astar.path);
+          //t.AP().pathSetRoute(bFS.path);
         }
       }
        

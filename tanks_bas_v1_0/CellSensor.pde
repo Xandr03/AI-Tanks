@@ -36,7 +36,7 @@ class Sensor {
     Cell c = owner.team.nav.cells[parentIndex];
     for(int i = 0; i < c.neighboures.size(); i++){ 
       int index =  c.neighboures.get(i);
-      System.out.println(index);
+      //System.out.println(index);
       if(owner.team.nav.isValidIndex(index)){
         owner.team.nav.cells[index].visited = true;
         owner.team.nav.cells[index].timeSinceLastVisit = sw.getRunTime();

@@ -223,9 +223,9 @@ void draw()
   
  
   // UPDATE DISPLAY 
-  displayHomeBase();
+  //displayHomeBase();
 
-  displayGUI(); 
+  //displayGUI(); 
 
  
   world.draw(elapsedtime);
@@ -242,8 +242,11 @@ void checkForInput() {
         circle(mouseX, mouseY, 5);
         System.out.println("Is "+ index + " Walkable [" + red.nav.cells[index].pos+ "]"+ red.nav.cells[index].isWalkable);
            
+        double sec = sw.getRunTime();
+        //if(bFS.BreadthFirstSearch(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), red.nav)){
         if(bFS.computePath(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), red.nav, BestFirstSearch.ASTAR)){
            allTanks[0].AP().pathSetRoute(bFS.path);
+           System.out.println("TIME TO COMPLETE " + (sw.getRunTime() - sec));
         }
       
       }
@@ -251,12 +254,12 @@ void checkForInput() {
   
       if (up) {
         if (!pause && !gameOver) {
-          tank0.state=1; // moveForward
+          //tank0.state=1; // moveForward
         }
       } else 
       if (down) {
         if (!pause && !gameOver) {
-          tank0.state=2; // moveBackward
+          //tank0.state=2; // moveBackward
         }
       }
       
@@ -266,7 +269,7 @@ void checkForInput() {
       }
       
       if (!up && !down) {
-        tank0.state=0;
+        //tank0.state=0;
       }
 }
 
