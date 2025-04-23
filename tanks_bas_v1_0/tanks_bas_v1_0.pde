@@ -55,16 +55,11 @@ boolean pause;
 World world;
 
 StopWatch sw;
-
-Vehicle mover0;
-
-
  
-BestFirstSearch bFS = new BestFirstSearch();
+GeneralSearch GS = new GeneralSearch();
 
 Team red;
 Team blue;
-
 
 Builder builder = new Builder();
 
@@ -118,32 +113,8 @@ void setup()
   team1_tank1_startpos  = new PVector(width-50, height-150);
   team1_tank2_startpos  = new PVector(width-50, height-50);
 
-  
-  mover0 = new Vehicle(
-      new Vector2D(width/2, height/2), // position
-      15,                              // collision radius
-     new Vector2D(15, 15),            // velocity
-      40,                              // maximum speed
-      new Vector2D(1, 1),              // heading
-      1,                               // mass
-      0.5,                             // turning rate
-      200                              // max force
-  );
   // What does this mover look like
-  ArrowPic view = new ArrowPic(this);
-  // Show collision and movement hints
-  view.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
-  // Add the renderer to our MovingEntity
-  mover0.renderer(view);
-  // Constrain movement
-  Domain d = new Domain(60, 60, width-60, height-60);
-  mover0.worldDomain(d, SBF.REBOUND);
-  // Finally we want to add this to our game domain
-  world.add(mover0);
-  
-    //tank0_startpos = new PVector(50, 50);
 
-    
   TankPic blueTank = new TankPic(this, 50, team0Color);
   blueTank.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
   
@@ -229,7 +200,7 @@ void draw()
 
  
   world.draw(elapsedtime);
-  bFS.draw();
+  GS.draw();
 
 }
 
@@ -243,9 +214,9 @@ void checkForInput() {
         System.out.println("Is "+ index + " Walkable [" + red.nav.cells[index].pos+ "]"+ red.nav.cells[index].isWalkable);
            
         double sec = sw.getRunTime();
-        //if(bFS.BreadthFirstSearch(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), red.nav)){
-        if(bFS.computePath(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), red.nav, BestFirstSearch.ASTAR)){
-           allTanks[0].AP().pathSetRoute(bFS.path);
+        //if(GS.BreadthFirstSearch(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), red.nav)){
+        if(GS.computePath(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), red.nav, GeneralSearch.ASTAR)){
+           allTanks[0].AP().pathSetRoute(GS.path);
            System.out.println("TIME TO COMPLETE " + (sw.getRunTime() - sec));
         }
       
@@ -383,7 +354,7 @@ void mouseClicked()
 {
 
  /*
-  if(astar.computeStep(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), 1000, 10, nl)){
+  if(astar.computeStep(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), 1000, 10, currentNode)){
      allTanks[0].AP().pathSetRoute(astar.path);
   }
  */

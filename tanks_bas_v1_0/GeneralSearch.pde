@@ -1,21 +1,25 @@
 
-class BestFirstSearch {
+//Röda områden är bara väldigt dyra
 
+class GeneralSearch {
+
+  //Konstanta värden för val av sökning metod
   static final int ASTAR = 100;
   static final int GREEDY = 101;
   static final int DIJKSTRA = 102;
 
 
-
+  //lista med pathen
   LinkedList<GraphNode> path;
 
 
   boolean hasPath = false;
-  int pathSize = 0;
+
 
   public Node[] reached;
   public ArrayList<Node> visited = new ArrayList<Node>();
 
+  //Innre Node class för all data en nod behöver innehålla
   class Node implements Comparable<Node> {
 
     float pathCost;
@@ -78,74 +82,75 @@ class BestFirstSearch {
     }
   }
 
+
+  //Räkna ut en path från Start och Goal för vald söknings metod
   boolean computePath(PVector start, PVector goal, NavLayout nl, int SearchType) {
 
+    //om målet inte går att nå return flase
     if (!nl.cells[nl.getCellPosition(goal)].isWalkable) {
       return false;
     }
-    //open list contains cells that has not been searched.
-    //lowest cost first
-    PriorityQueue<Node> openList = new PriorityQueue<Node>();
-    //Closed list containt the cells that have already been explored
+    //nodeQueue innehåller node som ska sökas igenom, prioritet är lägsta först
+    PriorityQueue<Node> nodeQueue = new PriorityQueue<Node>();
+    //reached listan innehåller noder som redan har blivit utforskade
     reached = new Node[nl.size];
-    visited = new ArrayList<Node>();
 
+    //omvandla coordinater till grid coordinater
+    PVector goalPosition = nl.cells[nl.getCellPosition(goal)].pos;
 
-    PVector newGoal = nl.cells[nl.getCellPosition(goal)].pos;
+    //Skapa star noden och lägg till i queue
+    Node startNode = new Node(0, EuclideanDistance(start, goalPosition), start);
+    nodeQueue.add(startNode);
 
-    Node startNode = new Node(0, EuclideanDistance(start, newGoal), start);
-    openList.add(startNode);
+    //så långe nodeQueue har en node att ta så ska den köra
+    while (!nodeQueue.isEmpty()) {
 
+      //Skapa current node och cell
+      Node currentNode = nodeQueue.poll();
+      int index = nl.getCellPosition(currentNode.position);
+      Cell currentCell = nl.cells[index];
 
-    while (!openList.isEmpty()) {
-
-      //System.out.println(openList.peek().sum);
-      Node lowestValueNode = openList.poll();
-      int index = nl.getCellPosition(lowestValueNode.position);
-      if (!nl.cells[index].isWalkable) {
-        continue;
-      }
-      reached[index] = lowestValueNode;
-
-
-      if (nl.getCellPosition(lowestValueNode.position) == nl.getCellPosition(newGoal)) {
-        Node gn = new Node(lowestValueNode.pathCost, lowestValueNode.heuristicCost, goal);
-        gn.parent = lowestValueNode.parent;
+      //om noden är målet så reconstruera pathen
+      if (nl.getCellPosition(currentNode.position) == nl.getCellPosition(goalPosition)) {
+        Node gn = new Node(currentNode.pathCost, currentNode.heuristicCost, goal);
+        gn.parent = currentNode.parent;
         this.path = reconstructPath(gn, nl.minRec);
-        this.path2 = reconstructPathCell(gn, nl.minRec);
         hasPath = true;
         return true;
       }
 
-      Cell currentCell = nl.cells[index];
-
-
+      //Gå igenom all grannar till noden
       for (int i = 0; i < currentCell.neighboures.size(); i++) {
         int neighbourIndex = currentCell.neighboures.get(i);
-
 
         if (!nl.isValidIndex(neighbourIndex)) {
           continue;
         }
 
+        //få position från cell
         PVector p = nl.cells[neighbourIndex].pos;
 
-        float gAcc = g(lowestValueNode, p, SearchType);
-        float heurCost = h(p, newGoal, SearchType);
-        Node neighbour = new Node(gAcc, heurCost, p);
-        neighbour.parent = lowestValueNode;
+        //räkna ut path kostnad beroedn på om maan har A* eller Dijkstra
+        float gAcc = g(currentNode, p, SearchType);
+        //räkna ut heuristik kostnad kostnad beroedn på om man har A* eller GREEDY
+        float heurCost = h(p, goalPosition, SearchType);
 
+        //Skapa gran nod
+        Node neighbour = new Node(gAcc, heurCost, p);
+        neighbour.parent = currentNode;
+
+        //om man inte kan gå på gran noden så gå till nästa granne
         if (!nl.cells[neighbourIndex].isWalkable ) {
           continue;
         }
+        //om man inte nåt noden förut eller om den ny har bättre kostnad så sätt reached och lägg till i queue
         if (reached[neighbourIndex] == null || reached[neighbourIndex].sum > neighbour.sum) {
           reached[neighbourIndex] = neighbour;
-          openList.add(neighbour);
+          nodeQueue.add(neighbour);
         }
       }
     }
 
-    System.out.println("DID NOT REACH");
     return false;
   }
 
@@ -166,75 +171,72 @@ class BestFirstSearch {
 
 
 
-  boolean computeKnowablePath(PVector start, PVector goal, NavLayout nl, Tank t) {
+  boolean computeKnowledgePath(PVector start, PVector goal, NavLayout nl) {
 
-    if (!t.team.nav.cells[t.team.nav.getCellPosition(goal)].isWalkable) {
+    //om målet inte går att nå return flase
+    if (!nl.cells[nl.getCellPosition(goal)].isWalkable) {
       return false;
     }
-    //open list contains cells that has not been searched.
-    //lowest cost first
-    PriorityQueue<Node> openList = new PriorityQueue<Node>();
-    //Closed list containt the cells that have already been explored
-    reached = new Node[t.team.nav.size];
-    visited = new ArrayList<Node>();
+    //nodeQueue innehåller node som ska sökas igenom, prioritet är lägsta först
+    PriorityQueue<Node> nodeQueue = new PriorityQueue<Node>();
+
+    //reached listan innehåller noder som redan har blivit utforskade
+    reached = new Node[nl.size];
+
+    //omvandla coordinater till grid coordinater
+    PVector goalPosition = nl.cells[nl.getCellPosition(goal)].pos;
+
+    //Skapa gran nod
+    Node startNode = new Node(0, EuclideanDistance(start, goalPosition), start);
+    nodeQueue.add(startNode);
+
+    //så långe nodeQueue har en node att ta så ska den köra
+    while (!nodeQueue.isEmpty()) {
+
+      //Skapa current node och cell
+      Node currentNode = nodeQueue.poll();
+      int index = nl.getCellPosition(currentNode.position);
+      Cell currentCell = nl.cells[index];
 
 
-    PVector newGoal = t.team.nav.cells[t.team.nav.getCellPosition(goal)].pos;
-
-    Node startNode = new Node(0, EuclideanDistance(start, newGoal), start);
-    openList.add(startNode);
-    while (!openList.isEmpty()) {
-
-
-      Node lowestValueNode = openList.poll();
-      int index = t.team.nav.getCellPosition(lowestValueNode.position);
-      //System.out.println(index);
-      if (t.team.nav.cells[index] == null) {
-        continue;
-      };
-
-      if (!t.team.nav.cells[index].isWalkable) {
-        continue;
-      }
-
-
-      if (t.team.nav.getCellPosition(lowestValueNode.position) == t.team.nav.getCellPosition(newGoal)) {
-        Node gn = new Node(lowestValueNode.pathCost, lowestValueNode.heuristicCost, goal);
-        gn.parent = lowestValueNode.parent;
-        this.path = reconstructPath(gn, t.team.nav.minRec);
+      //om noden är målet så reconstruera pathen
+      if (nl.getCellPosition(currentNode.position) == nl.getCellPosition(goalPosition)) {
+        Node gn = new Node(currentNode.pathCost, currentNode.heuristicCost, goal);
+        gn.parent = currentNode.parent;
+        this.path = reconstructPath(gn, nl.minRec);
         hasPath = true;
         return true;
       }
 
-      Cell currentCell = t.team.nav.cells[index];
-
-
+      //Gå igenom all grannar till noden
       for (int i = 0; i < currentCell.neighboures.size(); i++) {
         int neighbourIndex = currentCell.neighboures.get(i);
-        if (!t.team.nav.isValidIndex(neighbourIndex)) {
+
+        //Kollar om index är valid och om tanken vet om området
+        if (!nl.isValidIndex(neighbourIndex) || !nl.cells[neighbourIndex].visited) {
           continue;
         }
 
-        if (!t.team.nav.cells[neighbourIndex].visited) {
-          continue;
-        };
+        //få position från cell
+        PVector p = nl.cells[neighbourIndex].pos;
 
+        //räkna ut path kostnad beroende på A*
+        float gAcc = g(currentNode, p, 100);
+        //räkna ut heuristik kostnad kostnad beroende på A*
+        float heurCost = h(p, goalPosition, 100);
 
-        PVector p = t.team.nav.cells[neighbourIndex].pos;
-
-        float gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x, lowestValueNode.position.y));
-        float heurCost = EuclideanDistance(p, newGoal);
+        //Skapa Granne
         Node neighbour = new Node(gAcc, heurCost, p);
-        neighbour.parent = lowestValueNode;
-        if (!t.team.nav.cells[neighbourIndex].isWalkable ) {
+        neighbour.parent = currentNode;
+
+        //Kolla om man kan gå på cellen
+        if (!nl.cells[neighbourIndex].isWalkable ) {
           continue;
         }
-        if (reached[neighbourIndex] != null) {
-          continue;
-        }
+        //om man inte nåt noden förut eller om den ny har bättre kostnad så sätt reached och lägg till i queue
         if (reached[neighbourIndex] == null || reached[neighbourIndex].sum > neighbour.sum) {
           reached[neighbourIndex] = neighbour;
-          openList.add(neighbour);
+          nodeQueue.add(neighbour);
         }
       }
     }
@@ -243,71 +245,67 @@ class BestFirstSearch {
   }
 
   //Weighted based on discovery
-  boolean computeStep(PVector start, float distance, Team t) {
+  boolean computeStep(PVector start, float distance, NavLayout nl) {
 
 
-    //open list contains cells that has not been searched.
-    //lowest cost first
-    PriorityQueue<Node> openList = new PriorityQueue<Node>();
-    //Closed list containt the cells that have already been explored
-    reached = new Node[t.nav.size];
-    visited = new ArrayList<Node>();
+    //nodeQueue innehåller node som ska sökas igenom, prioritet är lägsta först6
+    PriorityQueue<Node> nodeQueue = new PriorityQueue<Node>();
 
-    float totalDiscoveryCost = 0;
+    //reached listan innehåller noder som redan har blivit utforskade
+    reached = new Node[nl.size];
 
-    Node startNode = new Node(0, discovery(totalDiscoveryCost, 0), start);
-    openList.add(startNode);
-    while (!openList.isEmpty()) {
+    //Skapa gran nod
+    Node startNode = new Node(0, 0, start);
+    nodeQueue.add(startNode);
 
-
-      //System.out.println(openList.peek().sum);
-      Node lowestValueNode = openList.poll();
+    //så långe nodeQueue har en node att ta så ska den köra
+    while (!nodeQueue.isEmpty()) {
 
 
-      int index = t.nav.getCellPosition(lowestValueNode.position);
-      if (!t.nav.cells[abs(index)].isWalkable) {
-        return false;
-      }
-      reached[index] = lowestValueNode;
+      //Skapa current node och cell
+      Node currentNode = nodeQueue.poll();
+      int index = nl.getCellPosition(currentNode.position);
+      Cell currentCell = nl.cells[abs(index)];
 
-
-      if (dist(start.x, start.y, lowestValueNode.position.x, lowestValueNode.position.y) >= distance) {
-        this.path = reconstructPath(lowestValueNode, t.nav.minRec);
+      //om distanse från start och nuvarande node är större eller lika med de distanses som ges reconstruerea path
+      if (dist(start.x, start.y, currentNode.position.x, currentNode.position.y) >= distance) {
+        this.path = reconstructPath(currentNode, nl.minRec);
         hasPath = true;
         return true;
       }
 
-      Cell currentCell = t.nav.cells[abs(index)];
-
-
-
+      //Gå igenom all grannar till noden
       for (int i = 0; i < currentCell.neighboures.size(); i++) {
+
         int neighbourIndex = currentCell.neighboures.get(i);
-        Cell c = t.nav.getCell(neighbourIndex);
-        if (!c.isWalkable || c.isEnemyNearby || c.isEnemyBase ) {
+        Cell c = nl.getCell(neighbourIndex);
+
+        //if(!c.isWalkable){continue;}
+        //Kolla om cell är valid och om tanken verklige får gå på cellen
+        if (!nl.isValidIndex(neighbourIndex) || (!c.isWalkable || c.isEnemyNearby || c.isEnemyBase) ) {
           continue;
         }
 
-        PVector p = t.nav.cells[neighbourIndex].pos;
-
-        float gAcc = lowestValueNode.pathCost + abs(dist(p.x, p.y, lowestValueNode.position.x, lowestValueNode.position.y))/t.nav.minRec;
-        if (t.nav.getCell(neighbourIndex).visited) {
+        //få position från cell
+        PVector p = nl.cells[neighbourIndex].pos;
+        //path costnaden beror på distanse från start
+        float gAcc = currentNode.pathCost + abs(dist(p.x, p.y, currentNode.position.x, currentNode.position.y))/nl.minRec;
+        //om den cellen redan blivit besökt för lägg till på path kostnaden
+        if (nl.getCell(neighbourIndex).visited) {
           gAcc *= 1.5;
         }
 
-        double heurCost = t.nav.cells[neighbourIndex].timeSinceLastVisit -  sw.getRunTime()  + random(10);
+        //Heurisitksa funktionen beror på hur länge sedan någpn tank i laget gick besökte noden
+        double heurCost = nl.cells[neighbourIndex].timeSinceLastVisit -  sw.getRunTime()  + random(10);
+
+        //Skapa granne
         Node neighbour = new Node(neighbourIndex, gAcc, (float)heurCost, p);
-        totalDiscoveryCost += neighbour.sum;
-        neighbour.parent = lowestValueNode;
-        if (!t.nav.cells[neighbourIndex].isWalkable) {
-          continue;
-        }
-        if (reached[neighbourIndex] != null) {
-          continue;
-        }
+        neighbour.parent = currentNode;
+
+        //om man inte nåt noden förut eller om den ny har bättre kostnad så sätt reached och lägg till i queue
         if (reached[neighbourIndex] == null || reached[neighbourIndex].sum > neighbour.sum) {
           reached[neighbourIndex] = neighbour;
-          openList.add(neighbour);
+          nodeQueue.add(neighbour);
         }
       }
     }
@@ -354,10 +352,13 @@ class BestFirstSearch {
     }
   }
 
+
+  //Konstruera path
   LinkedList<GraphNode> reconstructPath(Node current, int cellSize) {
 
     LinkedList<GraphNode> path = new LinkedList<>();
     int id = 0;
+    //konstruera med hjälp av att gå uigenom nuvarande nod till man når null
     while (current != null) {
       path.addFirst(new GraphNode(id++, current.position.x, current.position.y));
       current = current.parent;
@@ -366,68 +367,57 @@ class BestFirstSearch {
     return path;
   }
 
-  LinkedList<GraphNode> reconstructPathWithTime(Node current, NavLayout nl) {
-
-    LinkedList<GraphNode> path = new LinkedList<>();
-    int id = 0;
-    while (current != null) {
-      nl.cells[current.id].timeSinceLastVisit = sw.getRunTime();
-      path.addFirst(new GraphNode(id++, current.position.x, current.position.y));
-      current = current.parent;
-    }
-
-    return path;
-  }
-
-
+  //Metod för att får en path genom breadth First Search
   boolean BreadthFirstSearch(PVector start, PVector goal, NavLayout nl) {
 
+    //Kolla om man kan gå på vald nod
     if (!nl.cells[nl.getCellPosition(goal)].isWalkable) {
       return false;
     }
-    //open list contains cells that has not been searched.
-    //lowest cost first
-    LinkedList<Node> openList = new LinkedList<Node>();
-    
-    //Closed list containt the cells that have already been explored
+
+    //nodeQueue innehåller node som ska sökas igenom, är FIFO
+    LinkedList<Node> nodeQueue = new LinkedList<Node>();
+
+    //reached listan innehåller noder som redan har blivit utforskade
     reached = new Node[nl.size];
 
-
-
+    //omvandla coordinater till grid coordinater från mål position
     PVector goalPositon = nl.cells[nl.getCellPosition(goal)].pos;
 
+
+    //Skapa start nod
     Node startNode = new Node(0, 0, start);
-    openList.add(startNode);
+    nodeQueue.add(startNode);
 
+    //så långe nodeQueue har en node att ta så ska den köra
+    while (!nodeQueue.isEmpty()) {
 
-    while (!openList.isEmpty()) {
-
-      //System.out.println(openList.peek().sum);
-      Node currentNode = openList.poll();
+      //Skapa current node och cell
+      Node currentNode = nodeQueue.poll();
       int index = nl.getCellPosition(currentNode.position);
-      if (!nl.cells[index].isWalkable) {
-        continue;
-      }
-      reached[index] = currentNode;
-
       Cell currentCell = nl.cells[index];
-
+    
+      //Gå igenom all grannar till noden
       for (int i = 0; i < currentCell.neighboures.size(); i++) {
         int neighbourIndex = currentCell.neighboures.get(i);
         if (!nl.isValidIndex(neighbourIndex)) {
           continue;
         }
-
+        
+        //få grannens cell position
         PVector p = nl.cells[neighbourIndex].pos;
         if (!nl.cells[neighbourIndex].isWalkable ) {
           continue;
         }
+        //kolla noden har redan blivit besökt
         if (reached[neighbourIndex] != null) {
           continue;
         }
+        //Skapa granen
         Node neighbour = new Node(0, 0, p);
         neighbour.parent = currentNode;
 
+        //oom Grannen är lika med målet så reconstruera en ny path
         if (nl.getCellPosition(neighbour.position) == nl.getCellPosition(goalPositon)) {
           Node gn = new Node(0, 0, goal);
           gn.parent = neighbour.parent;
@@ -435,26 +425,15 @@ class BestFirstSearch {
           hasPath = true;
           return true;
         }
-        //visited.add(neighbour);
+        //Lägg til granne i reached och FIFO linklistan
         reached[neighbourIndex] = neighbour;
-        openList.add(neighbour);
+        nodeQueue.add(neighbour);
       }
     }
 
     return false;
   }
 
-  LinkedList<Cell> reconstructPathCell(Node current, int cellSize) {
-
-    LinkedList<Cell> p = new LinkedList<>();
-    int id = 0;
-    while (current != null) {
-      p.addFirst(new Cell(current.position, false));
-      current = current.parent;
-    }
-
-    return p;
-  }
 
   float distance(PVector current, PVector other) {
     return abs(dist(current.x, current.y, other.x, other.y));

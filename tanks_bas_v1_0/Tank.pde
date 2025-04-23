@@ -47,7 +47,7 @@ class Tank extends Vehicle {
  
   //======================================  
   Tank(String _name, PVector _startpos, float _size, Team team, Team oposition ) {
-    super(new Vector2D(_startpos.x, _startpos.y),25, new Vector2D(0,0), 30, new Vector2D(0, 1), 1, 100 ,100);
+    super(new Vector2D(_startpos.x, _startpos.y),25, new Vector2D(0,0), 30, new Vector2D(0, 1), 1, 10 ,100);
     println("*** Tank.Tank()");
     this.name         = _name;
     this.diameter     = _size;

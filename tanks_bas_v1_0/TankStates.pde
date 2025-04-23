@@ -25,9 +25,9 @@ public class TankPatroleState extends State{
         t.returnToBase();
       }
       if(t.AP().pathRouteLength() <= 0){
-        if(bFS.computeStep(new PVector((float)t.pos().x, (float)t.pos().y), 100, t.team)){
+        if(GS.computeStep(new PVector((float)t.pos().x, (float)t.pos().y), 100, t.team.nav)){
           t.velocity(new Vector2D(0,0));
-          //t.AP().pathSetRoute(bFS.path);
+          t.AP().pathSetRoute(GS.path);
         }
       }
        
@@ -47,9 +47,9 @@ public class TankPatroleState extends State{
 public class TankObserving extends State{
   
   float time;
-  TankReturnToBaseState  toSwitch;
+  TankPatroleState  toSwitch;
   
-  TankObserving(float time, TankReturnToBaseState toSwitch){
+  TankObserving(float time, TankPatroleState toSwitch){
     super();
     this.time = time;
     this.toSwitch = toSwitch;
@@ -69,7 +69,7 @@ public class TankObserving extends State{
     time -= 1*deltaTime;
     if(time <= 0){
       base.FSM().changeState(toSwitch);
-      System.out.println("GO HOME");
+      //System.out.println("GO HOME");
     }
   
   }
@@ -91,8 +91,8 @@ public class TankReturnToBaseState extends State{
   
     if(base instanceof Tank){
       Tank t = (Tank)base;
-      if(bFS.computeKnowablePath(new PVector((float)t.pos().x, (float)t.pos().y), t.startpos ,null, t)){
-        t.AP().pathSetRoute(bFS.path);
+      if(GS.computeKnowledgePath(new PVector((float)t.pos().x, (float)t.pos().y), t.startpos , t.team.nav)){
+        t.AP().pathSetRoute(GS.path);
         t.AP().obstacleAvoidOff();
       }
     }
@@ -109,6 +109,7 @@ public class TankReturnToBaseState extends State{
         t.FSM().changeState(tankPatroleState);
         
         t.report();
+        t.FSM().changeState(new TankObserving(3, tankPatroleState));
       }
 
        

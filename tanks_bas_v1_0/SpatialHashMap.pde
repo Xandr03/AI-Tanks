@@ -11,7 +11,7 @@ public class Cell {
   public float EnemyDistance = 0;
   public boolean isEnemyNearby = false;
   public boolean isEnemyBase = false;
-  
+
 
   public double timeSinceLastVisit = 0;
 
@@ -164,24 +164,22 @@ public class NavLayout {
 
 
   void DrawTank0PathsFound() {
-     
+
     for (int i = 0; i < size; i++) {
       Cell p = cells[i];
       if (p.isEnemyNearby || p.isEnemyBase) {
-        fill(#F01616,100);
+        fill(#F01616, 100);
         rect(p.pos.x, p.pos.y, minRec, minRec);
         continue;
       }
-      
+
       if (cells[i].visited) {
         float time = (float)((sw.getRunTime() - p.timeSinceLastVisit)/sw.getRunTime());
-       
-        fill(#AE14FC,100 - 100*time);
+
+        fill(#AE14FC, 100 - 100*time);
         rect(p.pos.x, p.pos.y, minRec, minRec);
       }
-      
     }
-  
   }
 
 
@@ -282,6 +280,31 @@ public class NavLayout {
 
     int ObstacleSize = world.getObstacles(0, 0).size();
     Obstacle[] setOfOb = world.getObstacles(0, 0).toArray(new Obstacle[ObstacleSize]);
+
+
+    //gå igenom alla tanks sätta ett rött område förutom den första
+
+    Set<Integer> keys = World.allEntities.keySet();
+
+    for (Integer v : keys) {
+
+      BaseEntity base = World.allEntities.get(v);
+      if (base instanceof Tank) {
+
+        Tank t = (Tank)base;
+        if (t == allTanks[0]) {
+          continue;
+        }
+        int[] list = getCellRecArea(5, 5, new PVector((float)t.pos().x, (float)t.pos().y));
+
+        for (int i = 0; i < 5*5; i++) {
+
+          cells[list[i]].isWalkable = false;
+        }
+      }
+    }
+
+
 
     for (int i = 0; i < ObstacleSize; i++) {
 
