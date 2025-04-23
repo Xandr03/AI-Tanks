@@ -7,6 +7,7 @@ class GeneralSearch {
   static final int ASTAR = 100;
   static final int GREEDY = 101;
   static final int DIJKSTRA = 102;
+  static final int BREADTH = 103;
 
 
   //lista med pathen
