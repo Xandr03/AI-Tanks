@@ -1,6 +1,10 @@
+Grupp: 08 Medlemmar: Alexander Bakas
+
 All kod skapad av Alexander Bakas förutom kod delar från nerladdad template
 
 Tanken kommer att röra sig själv runt bannan men om man vill kan man kontrollera den.
+
+Det finns en AI for Games jar av peter lager som finns i code folder så man inte behöver ladda ned det. Om det inte funkar måste det laddas ned i libraries i processing. 
 
 Kontroller 
 
