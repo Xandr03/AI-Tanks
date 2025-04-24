@@ -1,14 +1,4 @@
-// Följande kan användas som bas inför uppgiften. //<>// //<>//
-// Syftet är att sammanställa alla varabelvärden i scenariet.
-// Variabelnamn har satts för att försöka överensstämma med exempelkoden.
-// Klassen Tank är minimal och skickas mer med som koncept(anrop/states/vektorer).
-
-
-//IDE USE THE BUILT IN VEHICLE EXPLORATION MODULE AND THEN A* to find way back home
-
-
-//TODO
-//Nodes need collision check so it dosent walk in to areas its not allowed to
+//Alexander Bakas alba5453 //<>// //<>//
 
 
 import game2dai.entities.*;
@@ -41,7 +31,7 @@ color team0Color;
 PVector team0_tank0_startpos;
 PVector team0_tank1_startpos;
 PVector team0_tank2_startpos;
-Tank tank0, tank1, tank2; //<>// //<>// //<>// //<>// //<>// //<>// //<>//
+Tank tank0, tank1, tank2;  //<>// //<>//
 
 // Team1
 color team1Color;
