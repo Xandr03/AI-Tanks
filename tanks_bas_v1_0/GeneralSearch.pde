@@ -142,7 +142,7 @@ class GeneralSearch {
 
         //om man inte kan gå på gran noden så gå till nästa granne
         if (!nl.cells[neighbourIndex].isWalkable ) {
-          continue;
+          neighbour.sum = Integer.MAX_VALUE;
         }
         //om man inte nåt noden förut eller om den ny har bättre kostnad så sätt reached och lägg till i queue
         if (reached[neighbourIndex] == null || reached[neighbourIndex].sum > neighbour.sum) {
@@ -232,7 +232,7 @@ class GeneralSearch {
 
         //Kolla om man kan gå på cellen
         if (!nl.cells[neighbourIndex].isWalkable ) {
-          continue;
+           neighbour.sum = Integer.MAX_VALUE;
         }
         //om man inte nåt noden förut eller om den ny har bättre kostnad så sätt reached och lägg till i queue
         if (reached[neighbourIndex] == null || reached[neighbourIndex].sum > neighbour.sum) {
@@ -283,9 +283,7 @@ class GeneralSearch {
 
         //if(!c.isWalkable){continue;}
         //Kolla om cell är valid och om tanken verklige får gå på cellen
-        if (!nl.isValidIndex(neighbourIndex) || (!c.isWalkable || c.isEnemyNearby || c.isEnemyBase) ) {
-          continue;
-        }
+   
 
         //få position från cell
         PVector p = nl.cells[neighbourIndex].pos;
@@ -302,6 +300,9 @@ class GeneralSearch {
         //Skapa granne
         Node neighbour = new Node(neighbourIndex, gAcc, (float)heurCost, p);
         neighbour.parent = currentNode;
+        if (!nl.isValidIndex(neighbourIndex) || (!c.isWalkable || c.isEnemyNearby || c.isEnemyBase) ) {
+          neighbour.sum = Integer.MAX_VALUE;
+        }
 
         //om man inte nåt noden förut eller om den ny har bättre kostnad så sätt reached och lägg till i queue
         if (reached[neighbourIndex] == null || reached[neighbourIndex].sum > neighbour.sum) {

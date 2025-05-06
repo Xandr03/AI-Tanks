@@ -1,9 +1,18 @@
 //Alexander Bakas alba5453
 
 
+public enum GridRegion{
+  
+  TL, T, TR,
+  ML, M, MR,
+  BL, B, BR
+ 
+}
+
 public class Cell {
 
   public PVector pos;
+  public GridRegion region; 
   public boolean visited = false;
   public boolean isWalkable = true;
 
@@ -45,6 +54,8 @@ public class NavLayout {
 
   public int[] neighbours;
 
+
+  public ArrayList<Integer> tankOnCells = new ArrayList<>(3*3*6);
 
 
   Cell[] cells;
@@ -283,7 +294,13 @@ public class NavLayout {
 
 
     //gå igenom alla tanks sätta ett rött område förutom den första
+    
+    for(int i : tankOnCells){
+      cells[i].isWalkable = true;
+    }
+    tankOnCells = new ArrayList(3*3*6);
 
+    
     Set<Integer> keys = World.allEntities.keySet();
 
     for (Integer v : keys) {
@@ -295,15 +312,15 @@ public class NavLayout {
         if (t == allTanks[0]) {
           continue;
         }
-        int[] list = getCellRecArea(5, 5, new PVector((float)t.pos().x, (float)t.pos().y));
+        int[] list = getCellRecArea(3, 3, new PVector((float)t.pos().x, (float)t.pos().y));
 
-        for (int i = 0; i < 5*5; i++) {
-
+        for (int i = 0; i < 3*3; i++) {
           cells[list[i]].isWalkable = false;
+          tankOnCells.add(list[i]);
         }
       }
     }
-
+    
 
 
     for (int i = 0; i < ObstacleSize; i++) {

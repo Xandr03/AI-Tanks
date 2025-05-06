@@ -1,4 +1,4 @@
-//Alexander Bakas alba5453 //<>// //<>//
+//Alexander Bakas alba5453 //<>// //<>// //<>// //<>// //<>// //<>// //<>//
 
 
 import game2dai.entities.*;
@@ -14,6 +14,9 @@ import java.util.*;
 import java.awt.event.KeyEvent;
 import java.util.function.*;
 
+
+// Implement priority in Traffic, or a manager, that checks and decides who can drive ahead
+// with potenitellt contract net protocol
 
 int SearchOption = 100;
 
@@ -31,7 +34,7 @@ color team0Color;
 PVector team0_tank0_startpos;
 PVector team0_tank1_startpos;
 PVector team0_tank2_startpos;
-Tank tank0, tank1, tank2;  //<>// //<>//
+Tank tank0, tank1, tank2;  //<>//
 
 // Team1
 color team1Color;
@@ -215,7 +218,7 @@ void displayAlgorithmOption() {
   textWidth('c');
   fill(#D200FC, 100);
   textSize(size);
-  text(s,pos.x, pos.y);
+  text(s, pos.x, pos.y);
 }
 
 //======================================
