@@ -1,7 +1,3 @@
-
-
-
-
 /*
 public static class IDGEN {
  
@@ -41,9 +37,16 @@ public static class IDGEN {
 public class HTNState {
   Tank tank;
   Team team;
+  boolean IsWorldPeacefull = true;
+  //Regions
+
   HTNState(Team team, Tank tank) {
     this.team = team;
     this.tank = tank;
+  }
+  
+  HTNState(Team team){
+    this.team = team;
   }
 }
 
@@ -53,45 +56,85 @@ public enum execState {
     Failed
 }
 
-public class Plan {
+public class Plan_runner {
 
-  LinkedList<Action> sequence;
+  LinkedList<Action> sequence = new LinkedList<>();
+
+  Action runningTask;
+
+  Tank owner;
+  Plan_runner(Tank tank) {
+    this.owner = tank;
+  }
+
+  void update(float deltaTime) {
+    System.out.println("update");
+    if (runningTask == null && sequence.isEmpty()) {
+      setTasks(Planner.Search(new BeTank(), owner.team.WorldState));
+      return;
+    }
+    if (runningTask.state == execState.Success) {
+      this.sequence.pop();
+      runningTask = this.sequence.peek();
+      return;
+    }
+    if (runningTask.state == execState.Failed) {
+       setTasks(Planner.Search(new BeTank(), owner.team.WorldState));
+       return;
+    }
+    System.out.println("runner update execute");
+    runningTask.execute(owner, deltaTime);
+  }
+
+  void setTasks(LinkedList<Action> sequence) {
+    this.sequence = sequence;
+    runningTask = this.sequence.peek();
+  }
 }
 
-public class planner {
+public static class Planner {
 
-  execState Search(HighLevelAction problem, Tank tank, Team team) {
-    HTNState initialState = new HTNState(team, tank);
-    PriorityQueue<BaseAction> frontier = new PriorityQueue<>();
+  public static LinkedList<Action> Search(HighLevelAction problem, HTNState state) {
+    System.out.println("Planning");
+    HTNState initialState = state;
+    LinkedList<BaseAction> frontier = new LinkedList<>();
 
     frontier.addAll(problem.getRefinments(state));
 
+    //Multiple solutions
     //ArrayList<Plan> solutions = new ArrayList<>();
 
     LinkedList<Action> prefix = new LinkedList<>();
 
-
-
     while (!frontier.isEmpty()) {
-
-      BaseAction plan = frontier.poll();
+      System.out.println("Planning While");
+      BaseAction plan = frontier.pop();
       HighLevelAction hla = null;
       if (plan instanceof HighLevelAction) {
         hla = (HighLevelAction)plan;
       }
 
-      HTNState outcome = getPotentialState(initialState, prefix);
+      //HTNState outcome = getPotentialState(initialState, prefix);
       if (hla == null) {
-        if ()
+        Action a = (Action)plan;
+        if (a.preCondition(initialState)) {
+          System.out.println("Planning add action");
+          prefix.add(a);
+          initialState = a.effect(initialState);
         }
+        continue;
       }
+      frontier.addAll(refine(hla, initialState));
+    }
+    return prefix;
+  }
 
-
-      return execState.Failed;
+  static ArrayList<BaseAction> refine(HighLevelAction hla, HTNState state) {
+    return hla.getRefinments(state);
   }
 
 
-  HTNState getPotentialState(HTNState intialState, LinkedList<Action> actions) {
+  static HTNState getPotentialState(HTNState initialState, LinkedList<Action> actions) {
 
     HTNState newState = initialState;
     for (Action act : actions) {
@@ -105,8 +148,8 @@ public class BaseAction { //Operator
 
 public abstract class Action extends BaseAction implements Comparable<BaseAction> { //Operator / primitive Action
 
-  Action() {
-  }
+  execState state = execState.Pending;
+
   @Override public int compareTo(BaseAction otherNode) {
     return -1;
   }
@@ -114,7 +157,7 @@ public abstract class Action extends BaseAction implements Comparable<BaseAction
 
   public abstract HTNState effect(HTNState state);
 
-  public abstract void execute();
+  public abstract void execute(Tank tank, float deltaTime);
 }
 
 
@@ -135,7 +178,7 @@ public  class HighLevelAction extends BaseAction implements Comparable<BaseActio
     return 0;
   }
 
-  public ArrayList<BaseAction> refinments;
+  public ArrayList<BaseAction> refinments = new ArrayList<>();
   public ArrayList<BaseAction> getRefinments(HTNState s) {
     ArrayList<BaseAction> actionsToReturn = new ArrayList<>();
     for (BaseAction a : refinments) {
@@ -190,57 +233,104 @@ public  class HighLevelAction extends BaseAction implements Comparable<BaseActio
 public class BeTank extends HighLevelAction {
 
   BeTank() {
-    refinments.add(new AttackHLA());
+    //refinments.add(new AttackHLA());
+    refinments.add(new ExploreHLA());
   }
 }
 
 
-public class AttackHLA extends HighLevelAction {
-  AttackHLA() {
-    refinments.add(new MoveToTarget());
+public class ExploreHLA extends HighLevelAction {
+
+  ExploreHLA() {
+    refinments.add(new ExploreMap());
   }
 }
 
-public class MoveToTarget extends HighLevelAction {
+public class ExploreMap extends HighLevelAction {
 
-  MoveToTarget() {
-    refinments.add(new MoveCloseToTarget());
-    refinments.add(new MoveAtDistance());
+  ExploreMap() {
+    refinments.add(new WalkAround());
   }
 }
 
-public class MoveAtDistance extends Action {
+public class WalkAround extends Action {
+
+  boolean pointSet = false;
+  float time = 0;
 
   public boolean preCondition(HTNState state) {
-    if (state.tank.hitPoints <= 1) {
-      return true;
-    }
-    return false;
-  }
-
-  public  HTNState effect(HTNState state) {
-    //Closer to target
-    return true;
-  }
-
-  void execute() {
-  }
-}
-
-public class MoveCloseToTarget extends Action {
-
-  public boolean preCondition(HTNState state) {
-    if (state.tank.hitPoints <= 1) {
-      return false;
-    }
-    return true;
+    return state.IsWorldPeacefull;
   }
 
   public HTNState effect(HTNState state) {
-    //Closer to target
-    return true;
+    //TODO
+    //regions explored functionality
+    return state;
   }
 
-  void execute() {
+  public void execute(Tank tank, float deltaTime) {
+    time += deltaTime* 1;
+    if(time >= 30){state = execState.Failed;}
+ 
+    if (tank.AP().pathRouteLength() <= 0) {
+      if (pointSet) {
+        state = execState.Success;
+        return;
+      }
+      if (GS.computeStep(new PVector((float)tank.pos().x, (float)tank.pos().y), 100, tank.team.nav)) {
+        tank.AP().pathSetRoute(GS.path);
+        pointSet = true;
+      }
+    }
   }
 }
+
+  public class AttackHLA extends HighLevelAction {
+    AttackHLA() {
+      refinments.add(new MoveToTarget());
+    }
+  }
+
+  public class MoveToTarget extends HighLevelAction {
+
+    MoveToTarget() {
+      refinments.add(new MoveCloseToTarget());
+      refinments.add(new MoveAtDistance());
+    }
+  }
+
+  public class MoveAtDistance extends Action {
+
+    public boolean preCondition(HTNState state) {
+      if (state.tank.hitPoints <= 1) {
+        return true;
+      }
+      return false;
+    }
+
+    public  HTNState effect(HTNState state) {
+      //Closer to target
+      return state;
+    }
+
+    void execute(Tank tank, float deltaTime) {
+    }
+  }
+
+  public class MoveCloseToTarget extends Action {
+
+    public boolean preCondition(HTNState state) {
+      if (state.tank.hitPoints <= 1) {
+        return false;
+      }
+      return true;
+    }
+
+    public HTNState effect(HTNState state) {
+      //Closer to target
+      return state;
+    }
+
+    void execute(Tank tank, float deltaTime) {
+    }
+  }

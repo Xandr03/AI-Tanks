@@ -1,4 +1,4 @@
-//Alexander Bakas alba5453 //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
+//Alexander Bakas alba5453 //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
 
 
 import game2dai.entities.*;
@@ -34,7 +34,7 @@ color team0Color;
 PVector team0_tank0_startpos;
 PVector team0_tank1_startpos;
 PVector team0_tank2_startpos;
-Tank tank0, tank1, tank2;  //<>// //<>// //<>//
+Tank tank0, tank1, tank2;  //<>// //<>// //<>// //<>//
 
 // Team1
 color team1Color;
@@ -151,7 +151,7 @@ void setup()
   allTanks[4] = tank4;
   allTanks[5] = tank5;
 
-  allTanks[0].setPatrole();
+  //allTanks[0].setPatrole();
 
 
   sw.reset();

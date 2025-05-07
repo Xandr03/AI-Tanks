@@ -38,6 +38,7 @@ class Tank extends Vehicle {
   
   int ID;
 
+  Plan_runner runner;
 
   //Array of notable item or enemies to update the team base knowledge
 
@@ -79,6 +80,7 @@ class Tank extends Vehicle {
     this.oposition = oposition;
 
     this.ID = team.addTank(this);
+    runner = new Plan_runner(this);
   }
 
   public void report() {
@@ -151,9 +153,10 @@ class Tank extends Vehicle {
 
   void update(double deltaTime, World world) {
     super.update(deltaTime, world);
+    
+    runner.update((float)deltaTime);
 
-
-
+    /*
     for (MovingEntity m : world.getMovers(this)) {
       if (m == this) {
 
@@ -176,6 +179,7 @@ class Tank extends Vehicle {
         }
       }
     }
+    */
   }
 
 

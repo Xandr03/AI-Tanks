@@ -9,8 +9,7 @@ class Team  {
   
   NavLayout nav;
     
-
-  
+  HTNState WorldState;
   
   PVector position;
   int mwidth = 150;
@@ -26,6 +25,7 @@ class Team  {
     this.position = pos;
     this.teamColor = teamColor;
     this.team = team;
+    WorldState = new HTNState(this);
   }
   
   int addTank(Tank t){
@@ -38,6 +38,7 @@ class Team  {
     this.teamColor = teamColor;
     this.team = team;
     this.nav = nav;
+    WorldState = new HTNState(this);
   }
   
   public boolean checkBoundry(PVector other){
