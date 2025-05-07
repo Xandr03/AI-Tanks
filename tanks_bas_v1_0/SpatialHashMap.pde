@@ -1,13 +1,28 @@
 //Alexander Bakas alba5453
 
 
+
+color[] colorMap = new color[]{(#D5F041), (#FA3AE1),(#D5F041), (#FA3AE1),(#D5F041), (#FA3AE1), (#D5F041),(#FA3AE1), (#D5F041)};
+
 public enum GridRegion{
   
-  TL, T, TR,
-  ML, M, MR,
-  BL, B, BR
+  TL(0), T(1), TR(2),
+  ML(3), M(4), MR(5),
+  BL(6), B(7), BR(8);
+  
+  int GridValue;
+  
+  GridRegion(int GridValue){
+    this.GridValue = GridValue;
+  }
+  
+  int getValue(){return GridValue;}
+  
+  void setValue(int value){this.GridValue = value;}
  
 }
+
+
 
 public class Cell {
 
@@ -90,6 +105,7 @@ public class NavLayout {
       for (int j = 0; j < mwidth/minRec; j++) {
         PVector pos = new PVector(j*minRec + xOffset, i*minRec + yOffset);
         cells[gheight + j] = new Cell(pos, true);
+        cells[gheight + j].region = getCellRegion(pos);
       }
     }
 
@@ -108,6 +124,24 @@ public class NavLayout {
         }
       }
     }
+  }
+  
+  
+  GridRegion getCellRegion(PVector pos){
+    float regionHeight = mheight/3;
+    float regionWidth = mwidth/3;
+    
+    PVector fixed = pos;
+
+    int newX = floor((fixed.x - (minRec/2))/regionWidth);
+    int newY = floor((fixed.y - (minRec/2))/regionHeight);
+
+    System.out.println("newX : " + newX + " newY : " + newY);
+
+    int value = newY  * (3) + newX ;
+    
+    return GridRegion.values()[min(value, 8)];
+    
   }
 
 
@@ -134,7 +168,7 @@ public class NavLayout {
 
         fill(#9CF5ED, 100 - dist);
         rect(p.pos.x, p.pos.y, minRec, minRec);
-        fill(#36E85E, max(30, 100 - dist));
+        fill(color(colorMap[p.region.getValue()]), max(30, 100 - dist));
         rect(p.pos.x, p.pos.y, minRec, minRec);
       } else {
         strokeWeight(max(0, 1 - dist/reach));

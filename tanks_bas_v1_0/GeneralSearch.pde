@@ -246,7 +246,7 @@ class GeneralSearch {
   }
 
   //Weighted based on discovery
-  boolean computeStep(PVector start, float distance, NavLayout nl) {
+  boolean computeStep(PVector start, float distance, GridRegion region,NavLayout nl) {
 
 
     //nodeQueue innehåller node som ska sökas igenom, prioritet är lägsta först6
@@ -269,7 +269,7 @@ class GeneralSearch {
       Cell currentCell = nl.cells[abs(index)];
 
       //om distanse från start och nuvarande node är större eller lika med de distanses som ges reconstruerea path
-      if (dist(start.x, start.y, currentNode.position.x, currentNode.position.y) >= distance) {
+      if (dist(start.x, start.y, currentNode.position.x, currentNode.position.y) >= distance && currentCell.region == region) {
         this.path = reconstructPath(currentNode, nl.minRec);
         hasPath = true;
         return true;
@@ -280,7 +280,8 @@ class GeneralSearch {
 
         int neighbourIndex = currentCell.neighboures.get(i);
         Cell c = nl.getCell(neighbourIndex);
-
+        
+        if(currentCell.region == region && c.region != region){continue;}
         //if(!c.isWalkable){continue;}
         //Kolla om cell är valid och om tanken verklige får gå på cellen
    

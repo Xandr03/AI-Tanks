@@ -68,7 +68,7 @@ public class Plan_runner {
   }
 
   void update(float deltaTime) {
-    System.out.println("update");
+    //System.out.println("update");
     if (runningTask == null && sequence.isEmpty()) {
       setTasks(Planner.Search(new BeTank(), owner.team.WorldState));
       return;
@@ -82,7 +82,7 @@ public class Plan_runner {
        setTasks(Planner.Search(new BeTank(), owner.team.WorldState));
        return;
     }
-    System.out.println("runner update execute");
+    //System.out.println("runner update execute");
     runningTask.execute(owner, deltaTime);
   }
 
@@ -95,7 +95,7 @@ public class Plan_runner {
 public static class Planner {
 
   public static LinkedList<Action> Search(HighLevelAction problem, HTNState state) {
-    System.out.println("Planning");
+    //System.out.println("Planning");
     HTNState initialState = state;
     LinkedList<BaseAction> frontier = new LinkedList<>();
 
@@ -107,7 +107,7 @@ public static class Planner {
     LinkedList<Action> prefix = new LinkedList<>();
 
     while (!frontier.isEmpty()) {
-      System.out.println("Planning While");
+      //System.out.println("Planning While");
       BaseAction plan = frontier.pop();
       HighLevelAction hla = null;
       if (plan instanceof HighLevelAction) {
@@ -118,7 +118,7 @@ public static class Planner {
       if (hla == null) {
         Action a = (Action)plan;
         if (a.preCondition(initialState)) {
-          System.out.println("Planning add action");
+          //System.out.println("Planning add action");
           prefix.add(a);
           initialState = a.effect(initialState);
         }
@@ -277,7 +277,7 @@ public class WalkAround extends Action {
         state = execState.Success;
         return;
       }
-      if (GS.computeStep(new PVector((float)tank.pos().x, (float)tank.pos().y), 100, tank.team.nav)) {
+      if (GS.computeStep(new PVector((float)tank.pos().x, (float)tank.pos().y), 100, GridRegion.values()[tank.ID], tank.team.nav)) {
         tank.AP().pathSetRoute(GS.path);
         pointSet = true;
       }

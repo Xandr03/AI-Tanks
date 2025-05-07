@@ -17,6 +17,7 @@ import java.util.function.*;
 
 // Implement priority in Traffic, or a manager, that checks and decides who can drive ahead
 // with potenitellt contract net protocol
+//TODO FIX EXPLORATION SO THEY EXPLORE REGION THEN ATTACK STATES
 
 int SearchOption = 100;
 
