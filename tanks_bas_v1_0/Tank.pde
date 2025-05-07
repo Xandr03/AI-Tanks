@@ -33,6 +33,10 @@ class Tank extends Vehicle {
 
   Team team;
   Team oposition;
+  
+  int hitPoints = 3;
+  
+  int ID;
 
 
   //Array of notable item or enemies to update the team base knowledge
@@ -72,20 +76,9 @@ class Tank extends Vehicle {
 
     sensor = new Sensor(this, 2, 1);
     this.path.owner = this;
-    team.tanks.add(this);
     this.oposition = oposition;
 
-
-
-    /*
-  int[] arr = team.nav.getCellRecArea(5, 3, new PVector(750,550));
-     for(int i = 0; i < 3*5; i++ ){
-     int index = arr[i];
-     if(team.nav.isValidIndex(index)){
-     team.nav.cells[index].isEnemyBase = true;
-     }
-     }
-     */
+    this.ID = team.addTank(this);
   }
 
   public void report() {
@@ -96,9 +89,9 @@ class Tank extends Vehicle {
   public boolean EnemyInVision() {
 
     boolean found = false;
-    for (int i = 0; i < oposition.tanks.size(); i++) {
+    for (int i = 0; i < oposition.size; i++) {
 
-      PVector opTank = new PVector((float)oposition.tanks.get(i).pos().x, (float)oposition.tanks.get(i).pos().y);
+      PVector opTank = new PVector((float)oposition.tanks[i].pos().x, (float)oposition.tanks[i].pos().y);
       int angle = round(VecMath.dotAngle(new PVector((float)heading().x, (float)heading().y), VecMath.normalize(VecMath.direction((float)heading().x, (float)heading().y, opTank.x, opTank.y))));
       float dist = dist((float)pos().x, (float)pos().y, opTank.x, opTank.y);
       if (angle> 5 && dist <= 200) {

@@ -9,8 +9,7 @@ class Team  {
   
   NavLayout nav;
     
-  
-  int size;
+
   
   
   PVector position;
@@ -19,12 +18,19 @@ class Team  {
   color teamColor;
   Teams team;
   
-  ArrayList<Tank> tanks = new ArrayList<>();
+ Tank[] tanks = new Tank[3];
+  
+  int size = 0;
   
   Team(color teamColor, PVector pos, Teams team){
     this.position = pos;
     this.teamColor = teamColor;
     this.team = team;
+  }
+  
+  int addTank(Tank t){
+    tanks[size] = t;
+    return size++;
   }
   
   Team(color teamColor, PVector pos, Teams team, NavLayout nav){
