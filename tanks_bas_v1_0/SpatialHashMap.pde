@@ -61,7 +61,7 @@ class Region {
     if (occupied || state == RegionStatus.Unexplored) {
       return false;
     }
-    float timeLast = 1 * deltaTime;
+    timeLast += deltaTime;
     if (timeLast >= 60) {
       return true;
     }
@@ -113,18 +113,17 @@ class RegionManager {
   }
 
   void update(float deltaTime) {
+    /*
     if (!(frame == 20)) {
       frame++;
       return;
     }
     frame = 0;
+    */
     for (int i = 0; i < 9; i++) {
       if (regions[i].isRegionUnchecked(deltaTime)) {
         regions[i].refresh();
         RegionsExplored -= 1;
-      }
-      if (regions[i].state == RegionStatus.Explored) {
-        RegionsExplored++;
       }
     }
     RegExProc = RegionsExplored/9;
@@ -137,8 +136,7 @@ class RegionManager {
     for (int i = 0; i < regions.length; i++) {
       
       float dist = dist(pos.x, pos.y, regions[i].regionMidPoint.x, regions[i].regionMidPoint.y);
-      if (dist < closestDist && !regions[i].occupied) {
-        System.out.println("Dist: " + dist + " ClosesDist " + closestDist);
+      if (dist < closestDist && (!regions[i].occupied && regions[i].state == RegionStatus.Unexplored)) {
         closestDist = dist;
         closestRegion = i;
       }
@@ -166,8 +164,8 @@ class RegionManager {
 
   void setRegionVisited(int index) {
     Region r = getRegion(index);
-    r.timeLast = (float)sw.getRunTime();
     r.state = RegionStatus.Explored;
+    RegionsExplored++;
   }
 }
 

@@ -296,7 +296,7 @@ class GeneralSearch {
         }
 
         //Heurisitksa funktionen beror på hur länge sedan någpn tank i laget gick besökte noden
-        double heurCost = nl.cells[neighbourIndex].timeSinceLastVisit -  sw.getRunTime()  + random(10);
+        double heurCost =nl.cells[neighbourIndex].timeSinceLastVisit - sw.getRunTime() + random(3);
 
         //Skapa granne
         Node neighbour = new Node(neighbourIndex, gAcc, (float)heurCost, p);

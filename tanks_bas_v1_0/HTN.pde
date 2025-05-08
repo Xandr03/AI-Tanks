@@ -61,10 +61,6 @@ public class HTNState {
     this.rm = new RegionManager(state.rm);
     this.IsWorldPeacefull = state.IsWorldPeacefull;
     this.enemiesLeft = state.enemiesLeft;
-
-    //DELETE LATER
-    this.team = state.team;
-    this.tank = state.tank;
   }
 }
 
@@ -78,15 +74,29 @@ public class Plan_runner {
 
   LinkedList<Action> sequence = new LinkedList<>();
 
+  boolean isDone = true;
+
+
+  Plan_runner secondaryPlanner; //For Handling Breaking and yielding
+
   Action runningTask;
 
   Tank owner;
   Plan_runner(Tank tank) {
     this.owner = tank;
+    this.secondaryPlanner = new Plan_runner(owner);
+  }
+
+  boolean hasTask() {
+    return !sequence.isEmpty();
   }
 
   void update(float deltaTime) {
     //System.out.println("update");
+    if (secondaryPlanner.hasTask()) {
+      secondaryPlanner.update(deltaTime);
+    }
+
     if (runningTask == null && sequence.isEmpty()) {
       HTNState tankWorldState = new HTNState(owner.team.WorldState);
       tankWorldState.tank = owner;
@@ -271,6 +281,11 @@ public  class HighLevelAction extends BaseAction implements Comparable<BaseActio
  */
 
 
+
+public class BeTankDriveSafe extends HighLevelAction {
+}
+
+
 public class BeTank extends HighLevelAction {
 
   BeTank() {
@@ -370,6 +385,7 @@ public class MoveToRegion extends Action {
     time += deltaTime* 1;
     if (time >= 30) {
       state = execState.Failed;
+      tank.team.nav.rm.regions[tank.regionToExplore].occupied = false;
     }
 
     if (tank.AP().pathRouteLength() <= 0) {
@@ -411,13 +427,16 @@ public class MoveInRegion extends Action {
 
   public void execute(Tank tank, float deltaTime) {
 
-    time += deltaTime* 1;
-    if (time >= 10) {
+    time += deltaTime;
+    if (time >= 20) {
       state = execState.Success;
+      tank.team.nav.rm.setRegionVisited(tank.regionToExplore);
+      tank.team.nav.rm.regions[tank.regionToExplore].occupied = false;
+      return;
     }
 
     if (tank.AP().pathRouteLength() <= 0) {
-      if (GS.computeStep(new PVector((float)tank.pos().x, (float)tank.pos().y), 100, GridRegion.values()[tank.regionToExplore], tank.team.nav)) {
+      if (GS.computeStep(new PVector((float)tank.pos().x, (float)tank.pos().y), 150, GridRegion.values()[tank.regionToExplore], tank.team.nav)) {
         tank.AP().pathSetRoute(GS.path);
       }
     }
@@ -483,13 +502,13 @@ public class MoveToTarget extends HighLevelAction {
 
     //Refinement 1
     refinments.add(new Refinment(
-      s -> s.tank.hitPoints <= 1,
+      s -> s.tank != null && s.tank.hitPoints <= 1,
       tasks1
       ));
 
     //Refinemnt 2
     refinments.add(new Refinment(
-      s -> s.tank.hitPoints > 1,
+      s -> s.tank != null && s.tank.hitPoints > 1,
       tasks2
       ));
   }
@@ -498,7 +517,7 @@ public class MoveToTarget extends HighLevelAction {
 public class MoveAtDistance extends Action {
 
   public boolean preCondition(HTNState state) {
-    if (state.tank.hitPoints <= 1) {
+    if (true) {
       return true;
     }
     return false;
@@ -516,7 +535,7 @@ public class MoveAtDistance extends Action {
 public class MoveCloseToTarget extends Action {
 
   public boolean preCondition(HTNState state) {
-    if (state.tank.hitPoints <= 1) {
+    if (true) {
       return false;
     }
     return true;
