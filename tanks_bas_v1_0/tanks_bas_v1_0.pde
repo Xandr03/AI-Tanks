@@ -1,4 +1,4 @@
-//Alexander Bakas alba5453 //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
+//Alexander Bakas alba5453 //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
 
 
 import game2dai.entities.*;
@@ -35,7 +35,7 @@ color team0Color;
 PVector team0_tank0_startpos;
 PVector team0_tank1_startpos;
 PVector team0_tank2_startpos;
-Tank tank0, tank1, tank2;  //<>// //<>// //<>// //<>//
+Tank tank0, tank1, tank2;  //<>// //<>// //<>// //<>// //<>// //<>// //<>//
 
 // Team1
 color team1Color;
@@ -156,8 +156,8 @@ void setup()
 
 
   sw.reset();
-  red.nav.updateNavLayout(world);
-  blue.nav.updateNavLayout(world);
+  red.nav.updateNavLayout(world, 0);
+  blue.nav.updateNavLayout(world,0);
 }
 
 void draw()
@@ -167,12 +167,12 @@ void draw()
   world.update(elapsedtime);
   background(200);
 
-
+  blue.display((float)elapsedtime);
+  red.display((float)elapsedtime);
 
   red.nav.draw();
   //blue.nav.draw();
-  blue.display();
-  red.display();
+
 
 
   checkForInput(); // Kontrollera inmatning.

@@ -94,8 +94,8 @@ class Team  {
       rect(position.x, position.y, mwidth, mheight);
   }
   
-  void display() {
-    nav.updateNavLayout(world);
+  void display(float deltaTime) {
+    nav.updateNavLayout(world, deltaTime);
     displayHomeBase();
   }
 }

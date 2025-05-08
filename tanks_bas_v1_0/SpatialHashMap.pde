@@ -2,32 +2,180 @@
 
 
 
-color[] colorMap = new color[]{(#D5F041), (#FA3AE1),(#D5F041), (#FA3AE1),(#D5F041), (#FA3AE1), (#D5F041),(#FA3AE1), (#D5F041)};
+color[] colorMap = new color[]{(#D5F041), (#FA3AE1), (#D5F041), (#FA3AE1), (#D5F041), (#FA3AE1), (#D5F041), (#FA3AE1), (#D5F041)};
 
-public enum GridRegion{
-  
+public enum GridRegion {
+
   TL(0), T(1), TR(2),
-  ML(3), M(4), MR(5),
-  BL(6), B(7), BR(8);
-  
+    ML(3), M(4), MR(5),
+    BL(6), B(7), BR(8);
+
   int GridValue;
-  
-  GridRegion(int GridValue){
+
+  GridRegion(int GridValue) {
     this.GridValue = GridValue;
   }
-  
-  int getValue(){return GridValue;}
-  
-  void setValue(int value){this.GridValue = value;}
- 
+
+  int getValue() {
+    return GridValue;
+  }
+
+  void setValue(int value) {
+    this.GridValue = value;
+  }
 }
 
+
+public enum RegionStatus {
+  Explored,
+    Danger,
+    Unexplored
+}
+
+class Region {
+
+  String name;
+  boolean isClaimed = false;
+  boolean occupied = false;
+  RegionStatus state = RegionStatus.Unexplored;
+  float timeLast = 0;
+  PVector regionMidPoint;
+
+  Region(String name) {
+    this.name = name;
+  }
+
+  Region() {
+  }
+
+  Region(Region r) {
+    this.name = r.name;
+    this.occupied = r.occupied;
+    this.timeLast = r.timeLast;
+    this.state = r.state;
+    this.isClaimed = r.isClaimed;
+    this.regionMidPoint = r.regionMidPoint;
+  }
+
+  boolean isRegionUnchecked(float deltaTime) {
+    if (occupied || state == RegionStatus.Unexplored) {
+      return false;
+    }
+    float timeLast = 1 * deltaTime;
+    if (timeLast >= 60) {
+      return true;
+    }
+    return false;
+  }
+
+  void refresh() {
+    state = RegionStatus.Unexplored;
+    timeLast = 0;
+  }
+}
+
+class RegionManager {
+
+  private Region[] regions = new Region[]{new Region("TOP LEFT"), new Region("TOP"), new Region("TOP RIGHT"),
+    new Region("MIDDLE LEFT"), new Region("MIDDLE"), new Region("MIDDLE RIGHT"),
+    new Region("BOTTOM LEFT"), new Region("BOTTOM"), new Region("BOTTOM RIGHT")};
+
+
+  float RegExProc = 0;
+  int RegionsExplored = 0;
+
+  int frame;
+
+  RegionManager(int value) {
+    System.out.println("**** RegionManager");
+    for (int i = 1; i <= 3; i++) {
+      int index = i*3;
+      for (int j = 1; j <= 3; j++) {
+        int x = (value * j) - (value/2);
+        int y = ((value* i)) - (value/2);
+        System.out.println("X:"+ x+ " Y: " + y);
+        regions[(index-3 + j-1)].regionMidPoint = new PVector(x, y);
+      }
+    }
+  }
+
+  RegionManager(RegionManager rm) {
+    if (rm == null) {
+      return;
+    };
+    System.out.println("**** RegionManager Copy");
+    regions = new Region[rm.regions.length];
+    for (int i = 0; i < 9; i++) {
+      this.regions[i] = new Region(rm.regions[i]);
+    }
+    this.RegionsExplored = rm.RegionsExplored;
+    this.RegExProc = rm.RegExProc;
+  }
+
+  void update(float deltaTime) {
+    if (!(frame == 20)) {
+      frame++;
+      return;
+    }
+    frame = 0;
+    for (int i = 0; i < 9; i++) {
+      if (regions[i].isRegionUnchecked(deltaTime)) {
+        regions[i].refresh();
+        RegionsExplored -= 1;
+      }
+      if (regions[i].state == RegionStatus.Explored) {
+        RegionsExplored++;
+      }
+    }
+    RegExProc = RegionsExplored/9;
+  }
+
+  int getAvailibleRegion(PVector pos) {
+  
+    float closestDist = Integer.MAX_VALUE;
+    int closestRegion = -1;
+    for (int i = 0; i < regions.length; i++) {
+      
+      float dist = dist(pos.x, pos.y, regions[i].regionMidPoint.x, regions[i].regionMidPoint.y);
+      if (dist < closestDist && !regions[i].occupied) {
+        System.out.println("Dist: " + dist + " ClosesDist " + closestDist);
+        closestDist = dist;
+        closestRegion = i;
+      }
+    }
+    return closestRegion;
+  }
+
+
+  Region getRegion(int index) {
+    if (index < 0) {
+      return regions[0];
+    }
+    return regions[min(index, 8)];
+  }
+
+  void setRegionOccupied(int index, boolean b) {
+    Region r = getRegion(index);
+    r.occupied = b;
+  }
+
+  void setRegionDanger(int index) {
+    Region r = getRegion(index);
+    r.state = RegionStatus.Danger;
+  }
+
+  void setRegionVisited(int index) {
+    Region r = getRegion(index);
+    r.timeLast = (float)sw.getRunTime();
+    r.state = RegionStatus.Explored;
+  }
+}
 
 
 public class Cell {
 
   public PVector pos;
-  public GridRegion region; 
+  public GridRegion region;
   public boolean visited = false;
   public boolean isWalkable = true;
 
@@ -72,28 +220,34 @@ public class NavLayout {
 
   public ArrayList<Integer> tankOnCells = new ArrayList<>(3*3*6);
 
+  RegionManager rm;
+
 
   Cell[] cells;
 
   NavLayout(int pwidth, int pheight, int cellSize) {
+    System.out.println("*** NavLayout");
     this.minRec = cellSize;
     mheight = pheight;
     mwidth = pwidth;
     size = (pwidth/minRec) * (pheight/minRec);
     cells = new Cell[size];
     GenerateLayout();
+    rm = new RegionManager(mwidth);
   }
 
   NavLayout(int pwidth, int pheight, int xOffset, int yOffset, int cellSize) {
+    System.out.println("*** NavLayout");
     this.minRec = cellSize;
     mheight = floor(pheight);
     mwidth = floor(pwidth);
     size = floor(pwidth/minRec) * floor(pheight/minRec);
-    System.out.println(floor(pwidth/minRec) * floor(pheight/minRec));
+    //System.out.println(floor(pwidth/minRec) * floor(pheight/minRec));
     cells = new Cell[size];
     this.xOffset = xOffset;
     this.yOffset = yOffset;
     neighbours = new int[] {(-mwidth/minRec + 1), (-mwidth/minRec), (-mwidth/minRec - 1), -1, 1, (mwidth/minRec - 1), (mwidth/minRec), (mwidth/minRec + 1)};
+    rm = new RegionManager(mwidth/3);
     //{(-mwidth/minRec + 1), (-mwidth/minRec), (-mwidth/minRec - 1), -1, 1, (mwidth/minRec - 1), (mwidth/minRec), (mwidth/minRec + 1)};
     GenerateLayout();
   }
@@ -125,23 +279,22 @@ public class NavLayout {
       }
     }
   }
-  
-  
-  GridRegion getCellRegion(PVector pos){
+
+
+  GridRegion getCellRegion(PVector pos) {
     float regionHeight = mheight/3;
     float regionWidth = mwidth/3;
-    
+
     PVector fixed = pos;
 
     int newX = floor((fixed.x - (minRec/2))/regionWidth);
     int newY = floor((fixed.y - (minRec/2))/regionHeight);
 
-    System.out.println("newX : " + newX + " newY : " + newY);
+
 
     int value = newY  * (3) + newX ;
-    
+
     return GridRegion.values()[min(value, 8)];
-    
   }
 
 
@@ -320,21 +473,21 @@ public class NavLayout {
     return newY  * (mheight/minRec) + newX ;
   }
 
-  void updateNavLayout(World world) {
+  void updateNavLayout(World world, float deltaTime) {
 
 
     int ObstacleSize = world.getObstacles(0, 0).size();
     Obstacle[] setOfOb = world.getObstacles(0, 0).toArray(new Obstacle[ObstacleSize]);
 
-
+    rm.update(deltaTime);
     //gå igenom alla tanks sätta ett rött område förutom den första
-    
-    for(int i : tankOnCells){
+
+    for (int i : tankOnCells) {
       cells[i].isWalkable = true;
     }
     tankOnCells = new ArrayList(3*3*6);
 
-    
+
     Set<Integer> keys = World.allEntities.keySet();
 
     for (Integer v : keys) {
@@ -354,7 +507,7 @@ public class NavLayout {
         }
       }
     }
-    
+
 
 
     for (int i = 0; i < ObstacleSize; i++) {

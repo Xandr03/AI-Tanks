@@ -39,6 +39,8 @@ class Tank extends Vehicle {
   int ID;
 
   Plan_runner runner;
+  
+  int regionToExplore = 0;
 
   //Array of notable item or enemies to update the team base knowledge
 
