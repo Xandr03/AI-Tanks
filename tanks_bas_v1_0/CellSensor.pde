@@ -3,10 +3,15 @@ class Sensor {
 
   int frontSight = 2;
   int behindSight = 1;
-  
+
   Tank owner;
+  
+  
+
 
   ArrayList<Integer> frontSightArray = new ArrayList<>();
+  
+  ArrayList<Tank> possibleCollisions = new ArrayList<>();
 
 
   Sensor(Tank owner, int frontSight, int behindSight) {
@@ -29,21 +34,37 @@ class Sensor {
       }
     }
   }
-  
-  
-  void checkFront(){
+
+
+  void checkFront() {
     int parentIndex = owner.team.nav.getCellPosition((float)owner.pos().x, (float)owner.pos().y);
 
     Cell c = owner.team.nav.cells[parentIndex];
-    for(int i = 0; i < c.neighboures.size(); i++){ 
+    for (int i = 0; i < c.neighboures.size(); i++) {
       int index =  c.neighboures.get(i);
       //System.out.println(index);
-      if(owner.team.nav.isValidIndex(index)){
+      if (owner.team.nav.isValidIndex(index)) {
         owner.team.nav.cells[index].visited = true;
         owner.team.nav.cells[index].timeSinceLastVisit = sw.getRunTime();
       }
-      
     }
-  
+  }
+
+
+  ArrayList<Tank> CheckAreaDetection() {
+
+    possibleCollisions = new ArrayList<>();
+    owner.tankState.isEnemyInRange = false;
+    for (MovingEntity me : world.getMovers(owner)) {
+      if(me == owner){continue;}
+      if (me instanceof Tank) {
+        Tank other = (Tank)me;
+        if (CollisionChecker.checkCollision(owner, other)) {
+          possibleCollisions.add(other);
+        }
+        
+      }
+    }
+    return possibleCollisions;
   }
 }

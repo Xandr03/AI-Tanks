@@ -8,7 +8,8 @@ public enum GridRegion {
 
   TL(0), T(1), TR(2),
     ML(3), M(4), MR(5),
-    BL(6), B(7), BR(8);
+    BL(6), B(7), BR(8),
+   INV(-1);
 
   int GridValue;
 
@@ -27,19 +28,23 @@ public enum GridRegion {
 
 
 public enum RegionStatus {
-  Explored,
+    Explored,
     Danger,
-    Unexplored
+    Unexplored,
+    NONE
 }
 
 class Region {
 
-  String name;
+  String name = "";
   boolean isClaimed = false;
   boolean occupied = false;
+  boolean claimed = false;
   RegionStatus state = RegionStatus.Unexplored;
   float timeLast = 0;
   PVector regionMidPoint;
+
+  float holdTime = 0;
 
   Region(String name) {
     this.name = name;
@@ -49,6 +54,11 @@ class Region {
   }
 
   Region(Region r) {
+    if (r == null) {
+      regionMidPoint = new PVector(0,0);      
+      state = RegionStatus.NONE;
+      return;
+    }
     this.name = r.name;
     this.occupied = r.occupied;
     this.timeLast = r.timeLast;
@@ -64,6 +74,18 @@ class Region {
     timeLast += deltaTime;
     if (timeLast >= 60) {
       return true;
+    }
+    return false;
+  }
+
+  boolean regionExploring(float deltaTime) {
+    if (occupied && state == RegionStatus.Unexplored) {
+      holdTime += deltaTime;
+      if (holdTime >= 20) {
+        state = RegionStatus.Explored;
+        holdTime = 0;
+        return true;
+      }
     }
     return false;
   }
@@ -115,28 +137,31 @@ class RegionManager {
   void update(float deltaTime) {
     /*
     if (!(frame == 20)) {
-      frame++;
-      return;
-    }
-    frame = 0;
-    */
+     frame++;
+     return;
+     }
+     frame = 0;
+     */
     for (int i = 0; i < 9; i++) {
       if (regions[i].isRegionUnchecked(deltaTime)) {
         regions[i].refresh();
         RegionsExplored -= 1;
+      }
+      if (regions[i].regionExploring(deltaTime)) {
+        RegionsExplored++;
       }
     }
     RegExProc = RegionsExplored/9;
   }
 
   int getAvailibleRegion(PVector pos) {
-  
+
     float closestDist = Integer.MAX_VALUE;
     int closestRegion = -1;
     for (int i = 0; i < regions.length; i++) {
-      
+
       float dist = dist(pos.x, pos.y, regions[i].regionMidPoint.x, regions[i].regionMidPoint.y);
-      if (dist < closestDist && (!regions[i].occupied && regions[i].state == RegionStatus.Unexplored)) {
+      if (dist < closestDist && (!regions[i].claimed && regions[i].state == RegionStatus.Unexplored)) {
         closestDist = dist;
         closestRegion = i;
       }
@@ -152,9 +177,9 @@ class RegionManager {
     return regions[min(index, 8)];
   }
 
-  void setRegionOccupied(int index, boolean b) {
+  void setRegionClaimed(int index, boolean b) {
     Region r = getRegion(index);
-    r.occupied = b;
+    r.claimed = b;
   }
 
   void setRegionDanger(int index) {
@@ -162,11 +187,13 @@ class RegionManager {
     r.state = RegionStatus.Danger;
   }
 
+  /*
   void setRegionVisited(int index) {
-    Region r = getRegion(index);
-    r.state = RegionStatus.Explored;
-    RegionsExplored++;
-  }
+   Region r = getRegion(index);
+   r.state = RegionStatus.Explored;
+   RegionsExplored++;
+   }
+   */
 }
 
 
@@ -385,6 +412,15 @@ public class NavLayout {
     }
     return cells[index];
   }
+
+  public Cell getCell(PVector pos) {
+    int index = getCellPosition(pos);
+    if (!isValidIndex(index)) {
+      return null;
+    }
+    return cells[index];
+  }
+
 
   public boolean isValidIndex(int index) {
     if (index > size - 1 || index < 0) {

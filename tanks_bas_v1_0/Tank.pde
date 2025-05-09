@@ -7,6 +7,110 @@ TankGlobalState tankGlobalState = new TankGlobalState();
 TankIdleState idle = new TankIdleState();
 
 
+public class TankData {
+  final PVector pos;
+  final int id;
+  final Tank tank;
+
+  TankData(PVector pos, int id, Tank tank) {
+    this.tank = tank;
+    this.pos = pos;
+    this.id = id;
+  }
+}
+
+
+
+public class TrafficState {
+
+  boolean isBackObstructed = false;
+  boolean isFrontObstructed = false;
+  boolean isRighObstructed = false;
+  boolean isLeftObstructed = false;
+
+
+  ArrayList<TankData> otherTanks = new ArrayList<>();
+
+  //Sends to tank in the way to yield meaning backing up and moving away
+  boolean haveToYield = false;
+
+  int priority = -1;
+  
+  TrafficState(){}
+
+  TrafficState(TrafficState state) {
+     this.isBackObstructed = state.isBackObstructed;
+     this.isFrontObstructed = state.isFrontObstructed;
+     this.isRighObstructed = state.isRighObstructed;
+     this.isLeftObstructed = state.isLeftObstructed;
+     
+     for(TankData d : state.otherTanks){
+       this.otherTanks.add(d);
+     }
+     
+     this.haveToYield = state.haveToYield;
+     this.priority = state.priority;
+  }
+}
+
+
+public class TankState {
+
+  boolean isNavigation = false;
+  boolean isEnemyInRange = false;
+  boolean isFriendlyClose = false;
+  boolean hasRegion = false;
+
+  TrafficState tstate = new TrafficState();
+
+  boolean movingToRegion = false;
+
+  GridRegion regionDes = GridRegion.INV;
+  GridRegion regionCur = GridRegion.INV;
+
+  Region regionState = null;
+
+  int regionToExplore = -1;
+  int hitPoints = 3;
+
+  PVector tankPosition = new PVector();
+
+
+
+
+  TankState() {
+  }
+
+  TankState(TankState state) {
+    this.isNavigation = state.isNavigation;
+    this.hitPoints = state.hitPoints;
+    this.regionToExplore = state.regionToExplore;
+
+    this.isEnemyInRange = state.isEnemyInRange;
+    this.isFriendlyClose = state.isFriendlyClose;
+  }
+
+  TankState(TankState state, Tank tank) {
+    System.out.println("CREATE TANK STATE");
+    this.isNavigation = state.isNavigation;
+    this.hitPoints = state.hitPoints;
+    this.regionToExplore = state.regionToExplore;
+
+    this.isEnemyInRange = state.isEnemyInRange;
+    this.isFriendlyClose = state.isFriendlyClose;
+    this.hasRegion = state.hasRegion;
+    this.tankPosition = new PVector((float)tank.pos().x, (float)tank.pos().y);
+
+    this.regionState = new Region(state.regionState);
+    this.regionCur = tank.team.nav.getCell(tankPosition).region;
+    this.regionDes = state.regionDes;
+    //this.destination = state.destination;
+
+    this.tstate = new TrafficState(state.tstate);
+  }
+}
+
+
 
 class Tank extends Vehicle {
 
@@ -14,6 +118,8 @@ class Tank extends Vehicle {
 
 
   //Store Nodes it has visited
+
+  TankState tankState = new TankState();
 
   PVector acceleration;
   PVector velocity;
@@ -33,14 +139,16 @@ class Tank extends Vehicle {
 
   Team team;
   Team oposition;
-  
-  int hitPoints = 3;
-  
+
+
+  float sensArea = 100;
+
+
   int ID;
 
   Plan_runner runner;
-  
-  int regionToExplore = 0;
+
+
 
   //Array of notable item or enemies to update the team base knowledge
 
@@ -51,11 +159,11 @@ class Tank extends Vehicle {
 
   Path path = new Path();
 
-  
+
 
   //======================================
   Tank(String _name, PVector _startpos, float _size, Team team, Team oposition ) {
-    super(new Vector2D(_startpos.x, _startpos.y), 25, new Vector2D(0, 0), 30, new Vector2D(0, 1), 1, 10, 100);
+    super(new Vector2D(_startpos.x, _startpos.y), 25, new Vector2D(0, 0), 30, new Vector2D(0, 1), 1, 5, 100);
     println("*** Tank.Tank()");
     this.name         = _name;
     this.diameter     = _size;
@@ -73,9 +181,9 @@ class Tank extends Vehicle {
 
     Domain tankDomain = new Domain(25, 25, 775, 775);
     this.worldDomain(tankDomain, SBF.REBOUND);
-    this.addFSM();
-    this.FSM().setGlobalState(tankGlobalState);
-    this.FSM().changeState(idle);
+    // this.addFSM();
+    //this.FSM().setGlobalState(tankGlobalState);
+    // this.FSM().changeState(idle);
 
     sensor = new Sensor(this, 2, 1);
     this.path.owner = this;
@@ -83,6 +191,7 @@ class Tank extends Vehicle {
 
     this.ID = team.addTank(this);
     runner = new Plan_runner(this);
+    tankState.tankPosition = _startpos;
   }
 
   public void report() {
@@ -155,33 +264,38 @@ class Tank extends Vehicle {
 
   void update(double deltaTime, World world) {
     super.update(deltaTime, world);
-    
+
+    this.tankState.regionCur = this.team.nav.getCell(new PVector((float)pos().x, (float)pos().y)).region;
     runner.update((float)deltaTime);
 
     /*
     for (MovingEntity m : world.getMovers(this)) {
-      if (m == this) {
+     if (m == this) {
+     
+     continue;
+     }
+     if (m instanceof Tank) {
+     
+     Tank v = (Tank)m;
+     
+     PVector direction = VecMath.direction((float)this.pos().x, (float)this.pos().y, (float)m.pos().x, (float)m.pos().y);
+     float angle = VecMath.dotAngle(new PVector((float)this.heading().x, (float)this.heading().y), VecMath.normalize(direction));
+     float dist = dist((float)this.pos().x, (float)this.pos().y, (float)m.pos().x, (float)m.pos().y);
+     State otherState = v.FSM().getCurrentState();
+     if (dist <= 60 && angle > 0) {
+     if(otherState instanceof TankBreakAndWait && ((TankBreakAndWait)otherState).other == this) {
+     this.FSM().changeState(tankPatroleState);
+     continue;
+     }
+     this.FSM().changeState(new TankBreakAndWait(v));
+     }
+     }
+     }
+     */
 
-        continue;
-      }
-      if (m instanceof Tank) {
-
-        Tank v = (Tank)m;
-
-        PVector direction = VecMath.direction((float)this.pos().x, (float)this.pos().y, (float)m.pos().x, (float)m.pos().y);
-        float angle = VecMath.dotAngle(new PVector((float)this.heading().x, (float)this.heading().y), VecMath.normalize(direction));
-        float dist = dist((float)this.pos().x, (float)this.pos().y, (float)m.pos().x, (float)m.pos().y);
-        State otherState = v.FSM().getCurrentState();
-        if (dist <= 60 && angle > 0) {
-          if(otherState instanceof TankBreakAndWait && ((TankBreakAndWait)otherState).other == this) {
-            this.FSM().changeState(tankPatroleState);
-            continue;
-          }
-          this.FSM().changeState(new TankBreakAndWait(v));
-        }
-      }
+    if (this.AP().pathRouteLength() <= 0) {
+      tankState.isNavigation = false;
     }
-    */
   }
 
 
@@ -278,7 +392,10 @@ public class TankPic extends PicturePS {
   public void draw(BaseEntity user, float posX, float posY, float velX,
     float velY, float headX, float headY, float etime) {
 
-
+    Tank t = null;
+    if (user instanceof Tank) {
+      t = (Tank)user;
+    }
 
     // Draw and hints that are specified and relevant
     if (hints != 0) {
@@ -297,7 +414,14 @@ public class TankPic extends PicturePS {
 
     fill(base);
     strokeWeight(1);
-
+    if (t != null) {
+      BaseAction action = t.runner.runningTask;
+      if (action != null) {
+        textSize(10);
+        fill(#FF0000);
+        text(action.taskName, posX, posY + 50);
+      }
+    }
     translate(posX, posY);
 
     imageMode(CENTER);
@@ -308,12 +432,17 @@ public class TankPic extends PicturePS {
     strokeWeight(1);
     line(0, 0, 0+25, 0);
 
+
     //kanontornet
     ellipse(0, 0, size/2, size/2);
     strokeWeight(3);
     float cannon_length = size/2;
     line(0, 0, cannon_length, 0);
+
     imageMode(CORNER);
+
+
+
 
     //strokeWeight(1);
     //fill(230);

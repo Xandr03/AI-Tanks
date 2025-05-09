@@ -17,7 +17,7 @@ import java.util.function.*;
 
 // Implement priority in Traffic, or a manager, that checks and decides who can drive ahead
 // with potenitellt contract net protocol
-//TODO FIX EXPLORATION SO THEY EXPLORE REGION THEN ATTACK STATES
+//TODO fix a search algorithm that can take a direction and walk the tank back ward for example, so it dosent collide with trees and stop at the closest position that is availible 
 
 int SearchOption = 100;
 
@@ -127,20 +127,20 @@ void setup()
 
   TankPic redTank = new TankPic(this, 50, team1Color);
   redTank.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
-  tank3 = new Tank("tank3", team1_tank0_startpos, tank_size, blue, red);
-  tank4 = new Tank("tank4", team1_tank1_startpos, tank_size, blue, red);
-  tank5 = new Tank("tank5", team1_tank2_startpos, tank_size, blue, red);
+ // tank3 = new Tank("tank3", team1_tank0_startpos, tank_size, blue, red);
+ // tank4 = new Tank("tank4", team1_tank1_startpos, tank_size, blue, red);
+ // tank5 = new Tank("tank5", team1_tank2_startpos, tank_size, blue, red);
 
-  tank3.renderer(redTank);
-  tank4.renderer(redTank);
-  tank5.renderer(redTank);
+ // tank3.renderer(redTank);
+  //tank4.renderer(redTank);
+  //tank5.renderer(redTank);
 
   world.add(tank0);
   world.add(tank1);
   world.add(tank2);
-  world.add(tank3);
-  world.add(tank4);
-  world.add(tank5);
+  //world.add(tank3);
+ // world.add(tank4);
+ // world.add(tank5);
 
 
   allTanks[0] = tank0;
@@ -148,9 +148,9 @@ void setup()
 
   allTanks[1] = tank1;
   allTanks[2] = tank2;
-  allTanks[3] = tank3;
-  allTanks[4] = tank4;
-  allTanks[5] = tank5;
+  //allTanks[3] = tank3;
+  //allTanks[4] = tank4;
+ // allTanks[5] = tank5;
 
   //allTanks[0].setPatrole();
 

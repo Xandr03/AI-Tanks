@@ -35,22 +35,23 @@ public static class IDGEN {
  }
  */
 
+
+
 Planner planner = new Planner();
 
 
 public class HTNState {
-  Tank tank;
+
+  TankState tank = new TankState();
   Team team;
   boolean IsWorldPeacefull = true;
   int enemiesLeft = 3;
   RegionManager rm;
 
+
+
   //Regions
 
-  HTNState(Team team, Tank tank) {
-    this.team = team;
-    this.tank = tank;
-  }
 
   HTNState(Team team) {
     this.team = team;
@@ -61,6 +62,19 @@ public class HTNState {
     this.rm = new RegionManager(state.rm);
     this.IsWorldPeacefull = state.IsWorldPeacefull;
     this.enemiesLeft = state.enemiesLeft;
+  }
+  HTNState(HTNState state, TankState tankState) {
+    this.rm = new RegionManager(state.rm);
+    this.IsWorldPeacefull = state.IsWorldPeacefull;
+    this.enemiesLeft = state.enemiesLeft;
+    this.tank = new TankState(tankState);
+  }
+
+  HTNState(HTNState state, TankState tankState, Tank tank) {
+    this.rm = new RegionManager(state.rm);
+    this.IsWorldPeacefull = state.IsWorldPeacefull;
+    this.enemiesLeft = state.enemiesLeft;
+    this.tank = new TankState(tankState, tank);
   }
 }
 
@@ -84,7 +98,6 @@ public class Plan_runner {
   Tank owner;
   Plan_runner(Tank tank) {
     this.owner = tank;
-    this.secondaryPlanner = new Plan_runner(owner);
   }
 
   boolean hasTask() {
@@ -93,13 +106,9 @@ public class Plan_runner {
 
   void update(float deltaTime) {
     //System.out.println("update");
-    if (secondaryPlanner.hasTask()) {
-      secondaryPlanner.update(deltaTime);
-    }
-
     if (runningTask == null && sequence.isEmpty()) {
-      HTNState tankWorldState = new HTNState(owner.team.WorldState);
-      tankWorldState.tank = owner;
+      HTNState tankWorldState = new HTNState(owner.team.WorldState, owner.tankState, owner);
+
       setTasks(planner.Search(new BeTank(), tankWorldState));
       return;
     }
@@ -109,8 +118,7 @@ public class Plan_runner {
       return;
     }
     if (runningTask.state == execState.Failed) {
-      HTNState tankWorldState = new HTNState(owner.team.WorldState);
-      tankWorldState.tank = owner;
+      HTNState tankWorldState = new HTNState(owner.team.WorldState, owner.tankState, owner);
       setTasks(planner.Search(new BeTank(), tankWorldState));
       return;
     }
@@ -128,7 +136,8 @@ public class Planner {
 
   public LinkedList<Action> Search(HighLevelAction problem, HTNState state) {
     //System.out.println("Planning");
-    HTNState initialState = new HTNState(state);
+    HTNState initialState = state;
+    System.out.println("");
     LinkedList<BaseAction> frontier = new LinkedList<>();
 
     frontier.addAll(problem.getRefinments(state));
@@ -176,6 +185,7 @@ public class Planner {
   }
 }
 public class BaseAction { //Operator
+  String taskName = "NO NAME";
 }
 
 public abstract class Action extends BaseAction implements Comparable<BaseAction> { //Operator / primitive Action
@@ -280,33 +290,179 @@ public  class HighLevelAction extends BaseAction implements Comparable<BaseActio
  }
  */
 
-
-
-public class BeTankDriveSafe extends HighLevelAction {
-}
-
-
 public class BeTank extends HighLevelAction {
 
   BeTank() {
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
     tasks1.addAll(Arrays.asList(new AttackHLA()));
 
-
     ArrayList<BaseAction> tasks2 = new ArrayList<>();
     tasks2.addAll(Arrays.asList(new ExploreHLA()));
 
-    refinments.add(new Refinment(
-      state -> true,
-      tasks1
-      ));
+    ArrayList<BaseAction> tasks3 = new ArrayList<>();
+    tasks3.addAll(Arrays.asList(new TrafficHLA()));
 
     refinments.add(new Refinment(
       state -> true,
+      tasks3
+      ));
+
+    refinments.add(new Refinment(
+      state -> !state.IsWorldPeacefull && state.tank.isEnemyInRange,
+      tasks1
+      ));
+
+
+    refinments.add(new Refinment(
+      state -> state.IsWorldPeacefull && !state.tank.isEnemyInRange,
       tasks2
       ));
   }
 }
+
+
+
+
+public class TrafficHLA extends HighLevelAction {
+
+  TrafficHLA() {
+    ArrayList<BaseAction> tasks1 = new ArrayList<>();
+    tasks1.addAll(Arrays.asList(new CheckTraffic()));
+
+    refinments.add(new Refinment(
+      s -> true,
+      tasks1
+      ));
+  }
+}
+
+
+public class CheckTraffic extends HighLevelAction {
+  CheckTraffic() {
+    ArrayList<BaseAction> tasks1 = new ArrayList<>();
+    tasks1.addAll(Arrays.asList(new CheckSurronding()));
+
+    ArrayList<BaseAction> tasks2 = new ArrayList<>();
+    tasks2.addAll(Arrays.asList(new Break(), new BackUp(), new Yield()));
+
+    refinments.add(new Refinment(
+      s -> s.tank.isFriendlyClose || s.tank.isEnemyInRange,
+      tasks2
+      ));
+
+    refinments.add(new Refinment(
+      s -> true,
+      tasks1
+      ));
+  }
+}
+
+
+
+public class CheckSurronding extends Action {
+
+  CheckSurronding() {
+    taskName = "CheckSurronding";
+  }
+
+  public boolean preCondition(HTNState s) {
+    return true;
+  }
+
+  public HTNState effect(HTNState s) {
+    return s;
+  }
+
+  public void execute(Tank tank, float deltaTime) {
+    tank.sensor.checkFront();
+    ArrayList<Tank> others = tank.sensor.CheckAreaDetection();
+    tank.tankState.isEnemyInRange  = false;
+    tank.tankState.isFriendlyClose = false;
+    tank.tankState.tstate.otherTanks = new ArrayList<>();
+
+    for (Tank t : others) {
+      if (t.team != tank.team) {
+        tank.tankState.isEnemyInRange  = true;
+      } else {
+        tank.tankState.isFriendlyClose = true;
+      }
+      tank.tankState.tstate.otherTanks.add(new TankData(new PVector((float)t.pos().x, (float)t.pos().x), t.ID, t));
+    }
+    state = execState.Success;
+  }
+}
+
+
+public class BackUp extends Action {
+
+  BackUp() {
+    taskName = "BackUp";
+  }
+
+  public boolean preCondition(HTNState s) {
+    return true;
+  }
+
+  public HTNState effect(HTNState s) {
+    return s;
+  }
+
+  public void execute(Tank tank, float deltaTime) {
+
+    for (Tank other : tank.team.tanks) {
+      PVector direction = VecMath.direction((float)tank.pos().x, (float)tank.pos().y, (float)other.pos().x, (float)other.pos().y);
+      float angle = VecMath.dotAngle(new PVector((float)tank.heading().x, (float)tank.heading().y), VecMath.normalize(direction));
+      float dist = dist((float)tank.pos().x, (float)tank.pos().y, (float)other.pos().x, (float)other.pos().y);
+
+      if (dist <= 80 && angle > 0) {
+        tank.velocity(tank.heading().x * -1 * 30, tank.heading().y * -1 * 30);
+        return;
+      }
+    }
+    state = execState.Success;
+  }
+}
+
+public class Break extends Action {
+
+  Break() {
+    taskName = "Breaking";
+  }
+
+  public boolean preCondition(HTNState s) {
+    return true;
+  }
+
+  public HTNState effect(HTNState s) {
+    return s;
+  }
+
+  public void execute(Tank tank, float deltaTime) {
+
+    state = execState.Success;
+  }
+}
+
+public class Yield extends Action {
+
+  Yield() {
+    taskName = "Yielding";
+  }
+
+  public boolean preCondition(HTNState s) {
+    return true;
+  }
+
+  public HTNState effect(HTNState s) {
+    return s;
+  }
+
+  public void execute(Tank tank, float deltaTime) {
+    state = execState.Success;
+  }
+}
+
+
 
 
 
@@ -316,7 +472,7 @@ public class ExploreHLA extends HighLevelAction {
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
     tasks1.addAll(Arrays.asList(new ExploreRegion()));
     refinments.add(new Refinment(
-      state -> true,
+      state -> !state.tank.isNavigation,
       tasks1
       ));
   }
@@ -332,12 +488,12 @@ public class ExploreMap extends HighLevelAction {
 
 public class ExploreRegion extends HighLevelAction {
   ExploreRegion() {
-
+    System.out.println("*** ExploreRegion");
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
     tasks1.addAll(Arrays.asList(new PickRegion(), new MoveToRegion(), new SearchRegion()));
 
     refinments.add(new Refinment(
-      s -> s.IsWorldPeacefull,
+      s -> true,
       tasks1
       ));
   }
@@ -345,24 +501,39 @@ public class ExploreRegion extends HighLevelAction {
 
 public class PickRegion extends Action {
 
+  PickRegion() {
+    taskName = "PickRegion";
+  }
+
   public boolean preCondition(HTNState state) {
-    return state.rm.RegExProc < 100.0f;
+    return state.rm.RegExProc < 100.0f && (state.tank.regionState.state == RegionStatus.NONE || state.tank.regionState.state == RegionStatus.Explored);
   }
 
   public HTNState effect(HTNState state) {
     HTNState newState = state;
     newState.rm.RegExProc = (newState.rm.RegionsExplored + 1)/9;
-    return state;
+    newState.tank.regionState.occupied = false;
+    return newState;
   }
 
   public void execute(Tank tank, float deltaTime) {
+
+    Region oldRegion =  tank.tankState.regionState;
+    if (oldRegion != null) {
+      oldRegion.occupied = false;
+      oldRegion.claimed = false;
+    }
+
+
     RegionManager rm = tank.team.nav.rm;
-    tank.regionToExplore = rm.getAvailibleRegion(new PVector((float)tank.pos().x, (float)tank.pos().y));
-    if (tank.regionToExplore < 0) {
+    tank.tankState.regionToExplore = rm.getAvailibleRegion(new PVector((float)tank.pos().x, (float)tank.pos().y));
+    if (tank.tankState.regionToExplore < 0) {
       state = execState.Failed;
       return;
     }
-    rm.setRegionOccupied(tank.regionToExplore, true);
+    tank.tankState.regionState = rm.regions[tank.tankState.regionToExplore];
+    rm.setRegionClaimed(tank.tankState.regionToExplore, true);
+    tank.tankState.regionDes = GridRegion.values()[tank.tankState.regionToExplore];
     state = execState.Success;
   }
 }
@@ -372,53 +543,57 @@ public class MoveToRegion extends Action {
   boolean pointSet = false;
   float time = 0;
 
-  public boolean preCondition(HTNState state) {
-    return state.rm.RegExProc < 100.0f;
+  MoveToRegion() {
+    taskName = "MoveToRegion";
+  }
+
+
+  public boolean preCondition(HTNState s) {
+    return s.tank.regionCur != GridRegion.INV && s.tank.regionDes != GridRegion.INV && s.tank.regionCur != s.tank.regionDes;
   }
 
   public HTNState effect(HTNState state) {
-
+    state.tank.isNavigation = true;
     return state;
   }
 
   public void execute(Tank tank, float deltaTime) {
-    time += deltaTime* 1;
-    if (time >= 30) {
-      state = execState.Failed;
-      tank.team.nav.rm.regions[tank.regionToExplore].occupied = false;
-    }
 
     if (tank.AP().pathRouteLength() <= 0) {
-      if (pointSet) {
+      if (GS.computePath(new PVector((float)tank.pos().x, (float)tank.pos().y), tank.team.nav.rm.getRegion(tank.tankState.regionToExplore).regionMidPoint, tank.team.nav, GeneralSearch.GREEDY)) {
+        tank.AP().pathSetRoute(GS.path);
+        pointSet = true;
         state = execState.Success;
         return;
       }
-      if (GS.computePath(new PVector((float)tank.pos().x, (float)tank.pos().y), tank.team.nav.rm.getRegion(tank.regionToExplore).regionMidPoint, tank.team.nav, GeneralSearch.ASTAR)) {
-        tank.AP().pathSetRoute(GS.path);
-        pointSet = true;
-      }
     }
+    state = execState.Failed;
   }
 }
 
 public class SearchRegion extends HighLevelAction {
   SearchRegion() {
+    System.out.println("*** SearchRegion");
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
     tasks1.addAll(Arrays.asList(new MoveInRegion()));
     refinments.add(new Refinment(
-      s -> true,
+      s -> s.tank.regionCur != GridRegion.INV &&  s.tank.regionDes != GridRegion.INV && s.tank.regionCur == s.tank.regionDes,
       tasks1));
   }
 }
 
-
-
 public class MoveInRegion extends Action {
+
+  MoveInRegion() {
+    taskName = "MoveInRegion";
+  }
+
   public boolean preCondition(HTNState state) {
-    return state.rm.RegExProc < 100.0f;
+    return true;
   }
 
   public HTNState effect(HTNState state) {
+    state.tank.isNavigation = true;
     return state;
   }
 
@@ -426,20 +601,16 @@ public class MoveInRegion extends Action {
 
 
   public void execute(Tank tank, float deltaTime) {
-
-    time += deltaTime;
-    if (time >= 20) {
-      state = execState.Success;
-      tank.team.nav.rm.setRegionVisited(tank.regionToExplore);
-      tank.team.nav.rm.regions[tank.regionToExplore].occupied = false;
-      return;
-    }
-
+    //System.out.println("MoveInRegion Cur: "+ tank.tankState.regionCur +" Des: " + tank.tankState.regionDes);
+    tank.tankState.regionState.occupied = true;
     if (tank.AP().pathRouteLength() <= 0) {
-      if (GS.computeStep(new PVector((float)tank.pos().x, (float)tank.pos().y), 150, GridRegion.values()[tank.regionToExplore], tank.team.nav)) {
+      if (GS.computeStep(new PVector((float)tank.pos().x, (float)tank.pos().y), 150, GridRegion.values()[tank.tankState.regionToExplore], tank.team.nav)) {
         tank.AP().pathSetRoute(GS.path);
+        state = execState.Success;
+        return;
       }
     }
+    state = execState.Failed;
   }
 }
 
