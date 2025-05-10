@@ -48,7 +48,7 @@ public class HTNState {
   int enemiesLeft = 3;
   RegionManager rm;
 
-
+  TankData[] enemyTanks = new TankData[3];
 
   //Regions
 
@@ -75,6 +75,9 @@ public class HTNState {
     this.IsWorldPeacefull = state.IsWorldPeacefull;
     this.enemiesLeft = state.enemiesLeft;
     this.tank = new TankState(tankState, tank);
+    for (int i = 0; i < 3; i++) {
+      this.enemyTanks[i] = state.enemyTanks[i];
+    }
   }
 }
 
@@ -409,7 +412,7 @@ public class CheckSurronding extends Action {
       float angle = VecMath.dotAngle(direction, tank.heading);
       if (t.team != tank.team) {
         tank.tankState.isEnemyInRange  = true;
-
+        tank.team.WorldState.enemyTanks[t.ID] = new TankData(tankPos, t.ID, t, -1);
         return;
       } else {
         tank.tankState.isFriendlyClose = true;

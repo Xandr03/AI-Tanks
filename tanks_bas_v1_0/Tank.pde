@@ -76,7 +76,7 @@ public class TrafficState {
 
 
 public class AttackingState {
-  ArrayList<TankData> enemyTanks = new ArrayList<>();
+
 
   boolean isReloading = false;
   boolean isAligned = false;
@@ -89,9 +89,7 @@ public class AttackingState {
   }
 
   AttackingState(AttackingState state) {
-    for (TankData d : state.enemyTanks) {
-      this.enemyTanks.add(d);
-    }
+
 
     this.isReloading = state.isReloading;
     this.isAligned = state.isAligned;
