@@ -7,15 +7,26 @@ TankGlobalState tankGlobalState = new TankGlobalState();
 TankIdleState idle = new TankIdleState();
 
 
+
+final float MAXALLOWEDISTANCE = 100;
+final float MAXSTOPDISTANCE = 100;
+final float MAXMOVEAWAYDISTANCE = 80;
+final float FIELWOFVIEW = 0;
+
+final float SHOOTINGDISTANCE = 200;
+
+
 public class TankData {
   final PVector pos;
   final int id;
   final Tank tank;
+  final int priority;
 
-  TankData(PVector pos, int id, Tank tank) {
+  TankData(PVector pos, int id, Tank tank, int priority) {
     this.tank = tank;
     this.pos = pos;
     this.id = id;
+    this.priority = priority;
   }
 }
 
@@ -23,11 +34,17 @@ public class TankData {
 
 public class TrafficState {
 
-  boolean isBackObstructed = false;
-  boolean isFrontObstructed = false;
-  boolean isRighObstructed = false;
-  boolean isLeftObstructed = false;
+  boolean isInTraffic = false;
 
+  boolean cantGo = false;
+
+  boolean isObscured = false;
+
+  boolean isInTheWay = false;
+
+  PVector lastGoal = new PVector();
+
+  float closestDist = Integer.MAX_VALUE;
 
   ArrayList<TankData> otherTanks = new ArrayList<>();
 
@@ -35,24 +52,53 @@ public class TrafficState {
   boolean haveToYield = false;
 
   int priority = -1;
-  
-  TrafficState(){}
+
+  TrafficState() {
+  }
 
   TrafficState(TrafficState state) {
-     this.isBackObstructed = state.isBackObstructed;
-     this.isFrontObstructed = state.isFrontObstructed;
-     this.isRighObstructed = state.isRighObstructed;
-     this.isLeftObstructed = state.isLeftObstructed;
-     
-     for(TankData d : state.otherTanks){
-       this.otherTanks.add(d);
-     }
-     
-     this.haveToYield = state.haveToYield;
-     this.priority = state.priority;
+    this.isInTraffic = state.isInTraffic;
+    this.isInTheWay = state.isInTheWay;
+
+    for (TankData d : state.otherTanks) {
+      this.otherTanks.add(d);
+    }
+
+    this.haveToYield = state.haveToYield;
+    this.priority = state.priority;
+    this.lastGoal = state.lastGoal;
+    this.closestDist = state.closestDist;
+
+    this.cantGo = state.cantGo;
   }
 }
 
+
+
+public class AttackingState {
+  ArrayList<TankData> enemyTanks = new ArrayList<>();
+
+  boolean isReloading = false;
+  boolean isAligned = false;
+  boolean hasShoot = false;
+
+
+  float bestTargetDistance = Integer.MAX_VALUE;
+
+  AttackingState() {
+  }
+
+  AttackingState(AttackingState state) {
+    for (TankData d : state.enemyTanks) {
+      this.enemyTanks.add(d);
+    }
+
+    this.isReloading = state.isReloading;
+    this.isAligned = state.isAligned;
+    this.hasShoot = state.hasShoot;
+    this.bestTargetDistance = state.bestTargetDistance;
+  }
+}
 
 public class TankState {
 
@@ -61,7 +107,12 @@ public class TankState {
   boolean isFriendlyClose = false;
   boolean hasRegion = false;
 
+  boolean isBackingUp = false;
+
+  boolean isShouldWait = false;
+
   TrafficState tstate = new TrafficState();
+  AttackingState astate = new AttackingState();
 
   boolean movingToRegion = false;
 
@@ -75,9 +126,6 @@ public class TankState {
 
   PVector tankPosition = new PVector();
 
-
-
-
   TankState() {
   }
 
@@ -88,10 +136,13 @@ public class TankState {
 
     this.isEnemyInRange = state.isEnemyInRange;
     this.isFriendlyClose = state.isFriendlyClose;
+    this.isShouldWait = state.isShouldWait;
+
+    this.isBackingUp = state.isBackingUp;
   }
 
   TankState(TankState state, Tank tank) {
-    System.out.println("CREATE TANK STATE");
+    //System.out.println("CREATE TANK STATE");
     this.isNavigation = state.isNavigation;
     this.hitPoints = state.hitPoints;
     this.regionToExplore = state.regionToExplore;
@@ -105,8 +156,11 @@ public class TankState {
     this.regionCur = tank.team.nav.getCell(tankPosition).region;
     this.regionDes = state.regionDes;
     //this.destination = state.destination;
-
+    this.isShouldWait = state.isShouldWait;
     this.tstate = new TrafficState(state.tstate);
+    this.isBackingUp = state.isBackingUp;
+
+    this.astate = new AttackingState(state.astate);
   }
 }
 
@@ -125,6 +179,8 @@ class Tank extends Vehicle {
   PVector velocity;
   PVector position;
 
+  PVector heading;
+
   PVector startpos;
   String name;
   PImage img;
@@ -141,14 +197,14 @@ class Tank extends Vehicle {
   Team oposition;
 
 
-  float sensArea = 100;
+  float sensArea = 50;
 
 
-  int ID;
+  final int ID;
 
   Plan_runner runner;
 
-
+  float waitTimer = 0;
 
   //Array of notable item or enemies to update the team base knowledge
 
@@ -169,6 +225,8 @@ class Tank extends Vehicle {
     this.diameter     = _size;
     this.col          = team.teamColor;
     this.team = team;
+    this.position = _startpos;
+    this.heading = new PVector((float)this.heading().x, (float)this.heading().y);
 
     this.startpos     = new PVector(_startpos.x, _startpos.y);
 
@@ -189,14 +247,74 @@ class Tank extends Vehicle {
     this.path.owner = this;
     this.oposition = oposition;
 
-    this.ID = team.addTank(this);
     runner = new Plan_runner(this);
     tankState.tankPosition = _startpos;
+    this.ID = team.addTank(this);
   }
 
   public void report() {
     team.report(reportCells);
     reportCells = new ArrayList<Cell>();
+  }
+
+
+  Vector2D getGoodDirection(PVector other) {
+
+    NavLayout nl = team.nav;
+    Cell c = this.team.nav.getCell(position);
+
+    PVector direction = VecMath.normalize(VecMath.direction(other.x, other.y, position.x, position.y));
+    float bestAngle = 0;
+    Vector2D bestPos = new Vector2D(position.x, position.y);
+    for (int n : c.neighboures) {
+      Cell oCell = nl.getCell(n);
+      PVector cellPos = oCell.pos;
+      PVector cellDir = VecMath.normalize(VecMath.direction(cellPos.x, cellPos.y, position.x, position.y));
+      float angle = VecMath.dotAngle(cellDir, direction);
+      System.out.print(" Angle: [" +angle + "] ");
+      if (oCell.isWalkable && angle < bestAngle) {
+        this.tankState.tstate.isObscured = false;
+        //System.out.println("--------- Cell To Move To: " + new Vector2D(cellPos.x, cellPos.y).toString());
+        bestPos = new Vector2D(cellPos.x, cellPos.y);
+      }
+    }
+    //System.out.println("Did not Find Good Direction");
+    this.tankState.tstate.isObscured = true;
+    return bestPos;
+  }
+
+  public boolean isInTheWay(PVector pos, PVector heading) {
+    PVector direction = VecMath.normalize(VecMath.direction(pos.x, pos.y, position.x, position.y));
+    float angle = VecMath.dotAngle(direction, heading);
+    if (direction.mag() <= MAXALLOWEDISTANCE && angle > 0) {
+      return true;
+    }
+    return false;
+  }
+
+  void replan(Tank sender) {
+  }
+
+  void checkTankFrontObscured() {
+  }
+
+  void checkTankBackObscured() {
+  }
+
+  void checkTankLeftObscured() {
+  }
+
+  void checkTankRightObscured() {
+  }
+
+
+  void wait(float deltaTime) {
+    if (this.tankState.isShouldWait) {
+      waitTimer -= deltaTime;
+      if (waitTimer <= 0) {
+        this.tankState.isShouldWait = false;
+      }
+    }
   }
 
   public boolean EnemyInVision() {
@@ -264,9 +382,16 @@ class Tank extends Vehicle {
 
   void update(double deltaTime, World world) {
     super.update(deltaTime, world);
-
+    this.position.x = (float)this.pos().x;
+    this.position.y = (float)this.pos().y;
+    this.heading.x = (float)this.heading().x;
+    this.heading.y = (float)this.heading().y;
     this.tankState.regionCur = this.team.nav.getCell(new PVector((float)pos().x, (float)pos().y)).region;
     runner.update((float)deltaTime);
+
+
+
+    wait((float)deltaTime);
 
     /*
     for (MovingEntity m : world.getMovers(this)) {
@@ -420,8 +545,20 @@ public class TankPic extends PicturePS {
         textSize(10);
         fill(#FF0000);
         text(action.taskName, posX, posY + 50);
+        text("ID: "+ t.ID, posX, posY + 60);
+        text("PRIO: " + t.tankState.tstate.priority, posX, posY + 70);
+        text("IsInTheWay: "+ t.tankState.tstate.isInTheWay, posX, posY +80);
+        text("IsBackingUp: " + t.tankState.isBackingUp, posX, posY + 90);
       }
     }
+
+
+    for (GraphNode gp : t.AP().pathRoute()) {
+      Vector2D point = new Vector2D(gp.x(), gp.y());
+      fill(color(0, 255, 0), 100);
+      circle((float)point.x, (float)point.y, 10);
+    }
+
     translate(posX, posY);
 
     imageMode(CENTER);

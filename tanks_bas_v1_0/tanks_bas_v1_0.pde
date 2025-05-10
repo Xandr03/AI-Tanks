@@ -1,4 +1,4 @@
-//Alexander Bakas alba5453 //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
+//Alexander Bakas alba5453 //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
 
 
 import game2dai.entities.*;
@@ -24,6 +24,9 @@ int SearchOption = 100;
 boolean left, right, up, down;
 boolean mouse_pressed;
 
+
+BulletManager bm = new BulletManager();
+
 PImage tree_img;
 PVector tree1_pos, tree2_pos, tree3_pos;
 
@@ -35,7 +38,7 @@ color team0Color;
 PVector team0_tank0_startpos;
 PVector team0_tank1_startpos;
 PVector team0_tank2_startpos;
-Tank tank0, tank1, tank2;  //<>// //<>// //<>// //<>//
+Tank tank0, tank1, tank2;  //<>// //<>// //<>// //<>// //<>//
 
 // Team1
 color team1Color;
@@ -127,20 +130,20 @@ void setup()
 
   TankPic redTank = new TankPic(this, 50, team1Color);
   redTank.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
- // tank3 = new Tank("tank3", team1_tank0_startpos, tank_size, blue, red);
- // tank4 = new Tank("tank4", team1_tank1_startpos, tank_size, blue, red);
- // tank5 = new Tank("tank5", team1_tank2_startpos, tank_size, blue, red);
+ tank3 = new Tank("tank3", team1_tank0_startpos, tank_size, blue, red);
+ tank4 = new Tank("tank4", team1_tank1_startpos, tank_size, blue, red);
+ tank5 = new Tank("tank5", team1_tank2_startpos, tank_size, blue, red);
 
- // tank3.renderer(redTank);
-  //tank4.renderer(redTank);
-  //tank5.renderer(redTank);
+  tank3.renderer(redTank);
+  tank4.renderer(redTank);
+  tank5.renderer(redTank);
 
   world.add(tank0);
   world.add(tank1);
   world.add(tank2);
-  //world.add(tank3);
- // world.add(tank4);
- // world.add(tank5);
+  world.add(tank3);
+  world.add(tank4);
+  world.add(tank5);
 
 
   allTanks[0] = tank0;
@@ -148,9 +151,9 @@ void setup()
 
   allTanks[1] = tank1;
   allTanks[2] = tank2;
-  //allTanks[3] = tank3;
-  //allTanks[4] = tank4;
- // allTanks[5] = tank5;
+  allTanks[3] = tank3;
+  allTanks[4] = tank4;
+ allTanks[5] = tank5;
 
   //allTanks[0].setPatrole();
 
@@ -165,8 +168,10 @@ void draw()
   noCursor();
   double elapsedtime = sw.getElapsedTime();
   world.update(elapsedtime);
+  bm.update((float)elapsedtime);
   background(200);
 
+  bm.draw();
   blue.display((float)elapsedtime);
   red.display((float)elapsedtime);
 

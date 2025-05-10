@@ -9,7 +9,7 @@ public enum GridRegion {
   TL(0), T(1), TR(2),
     ML(3), M(4), MR(5),
     BL(6), B(7), BR(8),
-   INV(-1);
+    INV(-1);
 
   int GridValue;
 
@@ -28,7 +28,7 @@ public enum GridRegion {
 
 
 public enum RegionStatus {
-    Explored,
+  Explored,
     Danger,
     Unexplored,
     NONE
@@ -55,7 +55,7 @@ class Region {
 
   Region(Region r) {
     if (r == null) {
-      regionMidPoint = new PVector(0,0);      
+      regionMidPoint = new PVector(0, 0);
       state = RegionStatus.NONE;
       return;
     }
@@ -515,33 +515,33 @@ public class NavLayout {
 
     rm.update(deltaTime);
     //gå igenom alla tanks sätta ett rött område förutom den första
-
+    /*
     for (int i : tankOnCells) {
-      cells[i].isWalkable = true;
-    }
-    tankOnCells = new ArrayList(3*3*6);
-
-
-    Set<Integer> keys = World.allEntities.keySet();
-
-    for (Integer v : keys) {
-
-      BaseEntity base = World.allEntities.get(v);
-      if (base instanceof Tank) {
-
-        Tank t = (Tank)base;
-        if (t == allTanks[0]) {
-          continue;
-        }
-        int[] list = getCellRecArea(3, 3, new PVector((float)t.pos().x, (float)t.pos().y));
-
-        for (int i = 0; i < 3*3; i++) {
-          cells[list[i]].isWalkable = false;
-          tankOnCells.add(list[i]);
-        }
-      }
-    }
-
+     cells[i].isWalkable = true;
+     }
+     tankOnCells = new ArrayList(3*3*6);
+     
+     
+     Set<Integer> keys = World.allEntities.keySet();
+     
+     for (Integer v : keys) {
+     
+       BaseEntity base = World.allEntities.get(v);
+       if (base instanceof Tank) {
+       
+         Tank t = (Tank)base;
+         if (t == allTanks[0]) {
+           continue;
+         }
+         int[] list = getCellRecArea(3, 3, new PVector((float)t.pos().x, (float)t.pos().y));
+         
+         for (int i = 0; i < 3*3; i++) {
+           cells[list[i]].isWalkable = false;
+           tankOnCells.add(list[i]);
+         }
+       }
+     }
+     */
 
 
     for (int i = 0; i < ObstacleSize; i++) {

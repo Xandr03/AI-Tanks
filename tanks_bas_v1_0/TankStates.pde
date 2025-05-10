@@ -206,7 +206,7 @@ public class TankBreakAndWait extends State {
       float angle = VecMath.dotAngle(new PVector((float)t.heading().x, (float)t.heading().y), VecMath.normalize(direction));
       float dist = dist((float)base.pos().x, (float)base.pos().y, (float)v.pos().x, (float)v.pos().y);
 
-      if (dist <= 80 && angle > 0) {
+      if (dist <= MAXALLOWEDISTANCE && angle > 0) {
         t.velocity(t.heading().x * -1 * 30, t.heading().y * -1 * 30);
         return;
       }

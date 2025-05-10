@@ -55,7 +55,7 @@ class Sensor {
 
     possibleCollisions = new ArrayList<>();
     owner.tankState.isEnemyInRange = false;
-    for (MovingEntity me : world.getMovers(owner)) {
+    for (MovingEntity me : world.getMovers(owner, owner.sensArea)) {
       if(me == owner){continue;}
       if (me instanceof Tank) {
         Tank other = (Tank)me;

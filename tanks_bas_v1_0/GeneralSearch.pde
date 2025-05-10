@@ -332,7 +332,7 @@ class GeneralSearch {
      //fill(color(0,0,0), 100);
      // text("g " +round(visited.get(i).pathCost)+ " h" + round(visited.get(i).heuristicCost)+ " = "+ round(visited.get(i).sum), (float)point.x +10, (float)point.y);
      }
-     */
+
 
     for (int i = 0; i < 31*31; i++) {
       if (reached[i] == null) {
@@ -353,6 +353,7 @@ class GeneralSearch {
       }
       circle((float)point.x, (float)point.y, 10);
     }
+         */
   }
 
 
