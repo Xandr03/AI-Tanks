@@ -5,46 +5,193 @@ public enum Teams {
 }
 
 
+class TrafficTank implements Comparable<TrafficTank> {
+  int crossingTank = 0;
+  int facingTank = 0;
+  Tank owner;
+
+  TrafficTank(Tank owner) {
+    this.owner = owner;
+  }
+
+  TrafficTank(int crossing, int facing) {
+    this.crossingTank = crossing;
+    this.facingTank = facing;
+  }
+
+  @Override public int compareTo(TrafficTank other) {
+    PVector destination = owner.tankState.destination;
+    if (other.owner == null) {
+      return 1;
+    }
+    PVector otherDestination = other.owner.tankState.destination;
+
+    int destLength = Integer.MAX_VALUE;
+    int otherDestLength = Integer.MAX_VALUE;
+
+    if (destination != null) {
+      destLength = round(destination.mag());
+    }
+
+    if (otherDestination != null) {
+      otherDestLength = round(otherDestination.mag());
+    }
+    
+    int sum = crossingTank + facingTank + destLength;
+    int otherSum = other.facingTank + other.crossingTank + otherDestLength;
+    if (sum > otherSum) {
+      return 1;
+    }
+    if (sum < otherSum ) {
+      return -1;
+    }
+    return 0;
+  }
+}
+
 class TrafficManager {
 
-  LinkedList<Tank> tanks = new LinkedList<>();
-  int size;
+  private Map<Tank, TrafficTank> tanks = new HashMap<>();
 
-  void enterTraffic(Tank tank) {
-    if (tanks.contains(tank)) {
-      return;
+  Tank currentPriorityTank = null;
+
+  void updateValues(Tank tank) {
+    //tank.tankState.tstate.hasPriority = true;
+    if (tanks.containsKey(tank)) {
+      //System.out.println("ALREADY CONTAINS");
+      updateTrafficTank(tank);
+    } else {
+
+      tank.tankState.tstate.isInTraffic = true;
+      tanks.put(tank, new TrafficTank(tank));
+      updateTrafficTank(tank);
     }
-    tanks.add(tank);
-    if (tanks.peek() == tank) {
-      tank.tankState.tstate.priority = 0;
-      return;
-    }
-    tank.tankState.tstate.priority = 1;
+
+    checkLowestTank();
   }
 
   void leaveTraffic(Tank tank) {
-    if (tanks.peek() == tank) {
-      tank.tankState.tstate.priority = -1;
-      tanks.pop();
-      if (tanks.peek() == null) {
-        return;
-      }
-      tanks.peek().tankState.tstate.priority = 0;
+    TrafficTank trafficTank = tanks.get(tank);
+    tanks.remove(tank);
+    tank.tankState.tstate.isInTraffic = false;
+    tank.tankState.tstate.hasPriority = false;
+    if (tank == currentPriorityTank) {
+      tank.tankState.tstate.hasPriority = false;
+      currentPriorityTank = null;
+    }
+  }
+
+  private void updateTrafficTank(Tank tank) {
+    Set<Tank> keySet = tanks.keySet();
+    TrafficTank trafficTank = tanks.get(tank);
+    /*
+    if(tank.tankState.tstate.isObscured){
+      trafficTank.facingTank = 0;
+      trafficTank.crossingTank = 0;
       return;
     }
-    if (tanks.contains(tank)) {
-      tank.tankState.tstate.priority = -1;
-      tanks.remove(tank);
+    */
+    for (Tank t : keySet) {
+      trafficTank.facingTank = isFacingTank(tank, t);
+      trafficTank.crossingTank = isCrossingTank(tank, t);
     }
+  }
+
+
+  void checkLowestTank() {
+    Set<Tank> keySet = tanks.keySet();
+    TrafficTank lowestTank = null;
+    for (Tank t : keySet) {
+      TrafficTank tank = tanks.get(t);
+      if (lowestTank == null) {
+        lowestTank = tank;
+      }
+      if (tank.compareTo(lowestTank) <= -1) {
+        lowestTank = tank;
+      }
+    }
+
+    if (lowestTank != null && lowestTank.owner != null) {
+      if (currentPriorityTank != null) {
+        currentPriorityTank.tankState.tstate.hasPriority = false;
+      }
+      currentPriorityTank = lowestTank.owner;
+      currentPriorityTank.tankState.tstate.hasPriority = true;
+    }
+  }
+
+  /*
+  LinkedList<Tank> tanks = new LinkedList<>();
+   int size;
+   
+   
+   void putSelfLast(Tank tank) {
+   Tank peek = tanks.peek();
+   if (peek == tank) {
+   tanks.pop();
+   enterTraffic(tank);
+   }
+   }
+   
+   void enterTraffic(Tank tank) {
+   if (tanks.contains(tank)) {
+   return;
+   }
+   tanks.add(tank);
+   if (tanks.peek() == tank) {
+   tank.tankState.tstate.priority = 0;
+   return;
+   }
+   tank.tankState.tstate.priority = 1;
+   }
+   
+   void leaveTraffic(Tank tank) {
+   if (tanks.peek() == tank) {
+   tank.tankState.tstate.priority = -1;
+   tanks.pop();
+   if (tanks.peek() == null) {
+   return;
+   }
+   tanks.peek().tankState.tstate.priority = 0;
+   return;
+   }
+   if (tanks.contains(tank)) {
+   tank.tankState.tstate.priority = -1;
+   tanks.remove(tank);
+   }
+   }
+   
+   */
+
+  int isFacingTank(Tank tank, Tank other) {
+    if (tank.sensor.isInFront(tank, other)) {
+      if (other.tankState.destination != null) {
+        return round(other.tankState.destination.mag());
+      }
+      return Integer.MAX_VALUE;
+    }
+    return 0;
+  }
+
+
+
+  int isCrossingTank(Tank tank, Tank other) {
+    if (tank.sensor.isCrossingTank(tank, other)) {
+      if (other.tankState.destination != null) {
+        return round(other.tankState.destination.mag());
+      }
+      return Integer.MAX_VALUE;
+    }
+    return 0;
   }
 
   void draw() {
 
-    if (tanks.peek() == null) {
+    Tank mainTank = currentPriorityTank;
+    if (mainTank == null) {
       return;
     }
-    Tank mainTank = tanks.peek();
-    for (Tank t : tanks) {
+    for (Tank t : tanks.keySet()) {
       strokeWeight(5);
       line(t.position.x, t.position.y, mainTank.position.x, mainTank.position.y);
     }
@@ -184,6 +331,7 @@ class Team {
   }
 
   void display(float deltaTime) {
+    tm.checkLowestTank();
     nav.updateNavLayout(world, deltaTime);
     displayHomeBase();
     tm.draw();

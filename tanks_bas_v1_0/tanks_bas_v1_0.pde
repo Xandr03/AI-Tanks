@@ -118,7 +118,7 @@ void setup()
   TankPic blueTank = new TankPic(this, 50, team0Color);
   blueTank.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
 
-
+  
   tank0 = new Tank("tank0", team0_tank0_startpos, tank_size, red, blue );
   tank1 = new Tank("tank1", team0_tank1_startpos, tank_size, red, blue );
   tank2 = new Tank("tank2", team0_tank2_startpos, tank_size, red, blue );
@@ -127,9 +127,14 @@ void setup()
   tank1.renderer(blueTank);
   tank2.renderer(blueTank);
 
-
+  world.add(tank0);
+  world.add(tank1);
+  world.add(tank2);
+  
+  
   TankPic redTank = new TankPic(this, 50, team1Color);
   redTank.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
+  
  tank3 = new Tank("tank3", team1_tank0_startpos, tank_size, blue, red);
  tank4 = new Tank("tank4", team1_tank1_startpos, tank_size, blue, red);
  tank5 = new Tank("tank5", team1_tank2_startpos, tank_size, blue, red);
@@ -137,13 +142,17 @@ void setup()
   tank3.renderer(redTank);
   tank4.renderer(redTank);
   tank5.renderer(redTank);
-
-  world.add(tank0);
-  world.add(tank1);
-  world.add(tank2);
-  world.add(tank3);
+  
+    allTanks[3] = tank3;
+  allTanks[4] = tank4;
+ allTanks[5] = tank5;
+  
+    world.add(tank3);
   world.add(tank4);
   world.add(tank5);
+
+
+
 
 
   allTanks[0] = tank0;
@@ -151,9 +160,7 @@ void setup()
 
   allTanks[1] = tank1;
   allTanks[2] = tank2;
-  allTanks[3] = tank3;
-  allTanks[4] = tank4;
- allTanks[5] = tank5;
+
 
   //allTanks[0].setPatrole();
 
@@ -243,7 +250,7 @@ void checkForInput() {
         System.out.println("TIME TO COMPLETE " + (sw.getRunTime() - sec));
       }
     } else {
-      if (GS.computePath(new PVector((float)allTanks[0].pos().x, (float)allTanks[0].pos().y), new PVector(mouseX, mouseY), red.nav, SearchOption)) {
+      if (GS.computePath(allTanks[0], new PVector(mouseX, mouseY), red.nav, SearchOption)) {
         allTanks[0].AP().pathSetRoute(GS.path);
         System.out.println("TIME TO COMPLETE " + (sw.getRunTime() - sec));
       }

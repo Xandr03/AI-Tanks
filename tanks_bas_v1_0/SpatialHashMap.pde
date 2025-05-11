@@ -109,7 +109,7 @@ class RegionManager {
   int frame;
 
   RegionManager(int value) {
-    System.out.println("**** RegionManager");
+    //System.out.println("**** RegionManager");
     for (int i = 1; i <= 3; i++) {
       int index = i*3;
       for (int j = 1; j <= 3; j++) {
@@ -125,7 +125,7 @@ class RegionManager {
     if (rm == null) {
       return;
     };
-    System.out.println("**** RegionManager Copy");
+    //System.out.println("**** RegionManager Copy");
     regions = new Region[rm.regions.length];
     for (int i = 0; i < 9; i++) {
       this.regions[i] = new Region(rm.regions[i]);
@@ -203,7 +203,7 @@ public class Cell {
   public GridRegion region;
   public boolean visited = false;
   public boolean isWalkable = true;
-
+  public Tank occupier = null;
 
   public float EnemyDistance = 0;
   public boolean isEnemyNearby = false;
@@ -515,12 +515,12 @@ public class NavLayout {
 
     rm.update(deltaTime);
     //gå igenom alla tanks sätta ett rött område förutom den första
-    /*
+    
+    
     for (int i : tankOnCells) {
-     cells[i].isWalkable = true;
+     cells[i].occupier = null;
      }
      tankOnCells = new ArrayList(3*3*6);
-     
      
      Set<Integer> keys = World.allEntities.keySet();
      
@@ -536,12 +536,12 @@ public class NavLayout {
          int[] list = getCellRecArea(3, 3, new PVector((float)t.pos().x, (float)t.pos().y));
          
          for (int i = 0; i < 3*3; i++) {
-           cells[list[i]].isWalkable = false;
+           cells[list[i]].occupier = t;
            tankOnCells.add(list[i]);
          }
        }
      }
-     */
+     
 
 
     for (int i = 0; i < ObstacleSize; i++) {

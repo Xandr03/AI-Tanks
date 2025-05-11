@@ -85,7 +85,7 @@ class GeneralSearch {
 
 
   //Räkna ut en path från Start och Goal för vald söknings metod
-  boolean computePath(PVector start, PVector goal, NavLayout nl, int SearchType) {
+  boolean computePath(Tank tank, PVector goal, NavLayout nl, int SearchType) {
 
     //om målet inte går att nå return flase
     if (!nl.cells[nl.getCellPosition(goal)].isWalkable) {
@@ -100,7 +100,7 @@ class GeneralSearch {
     PVector goalPosition = nl.cells[nl.getCellPosition(goal)].pos;
 
     //Skapa star noden och lägg till i queue
-    Node startNode = new Node(0, EuclideanDistance(start, goalPosition), start);
+    Node startNode = new Node(0, EuclideanDistance(tank.position, goalPosition), tank.position);
     nodeQueue.add(startNode);
 
     //så långe nodeQueue har en node att ta så ska den köra
@@ -127,7 +127,9 @@ class GeneralSearch {
         if (!nl.isValidIndex(neighbourIndex)) {
           continue;
         }
-
+        if (nl.cells[neighbourIndex].occupier != null && nl.cells[neighbourIndex].occupier != tank ) {
+          continue;
+        }
         //få position från cell
         PVector p = nl.cells[neighbourIndex].pos;
 
@@ -144,6 +146,7 @@ class GeneralSearch {
         if (!nl.cells[neighbourIndex].isWalkable ) {
           neighbour.sum = Integer.MAX_VALUE;
         }
+
         //om man inte nåt noden förut eller om den ny har bättre kostnad så sätt reached och lägg till i queue
         if (reached[neighbourIndex] == null || reached[neighbourIndex].sum > neighbour.sum) {
           reached[neighbourIndex] = neighbour;
@@ -232,7 +235,7 @@ class GeneralSearch {
 
         //Kolla om man kan gå på cellen
         if (!nl.cells[neighbourIndex].isWalkable ) {
-           neighbour.sum = Integer.MAX_VALUE;
+          neighbour.sum = Integer.MAX_VALUE;
         }
         //om man inte nåt noden förut eller om den ny har bättre kostnad så sätt reached och lägg till i queue
         if (reached[neighbourIndex] == null || reached[neighbourIndex].sum > neighbour.sum) {
@@ -246,7 +249,7 @@ class GeneralSearch {
   }
 
   //Weighted based on discovery
-  boolean computeStep(PVector start, float distance, GridRegion region,NavLayout nl) {
+  boolean computeStep(Tank tank, float distance, GridRegion region, NavLayout nl) {
 
 
     //nodeQueue innehåller node som ska sökas igenom, prioritet är lägsta först6
@@ -256,7 +259,7 @@ class GeneralSearch {
     reached = new Node[nl.size];
 
     //Skapa gran nod
-    Node startNode = new Node(0, 0, start);
+    Node startNode = new Node(0, 0, tank.position);
     nodeQueue.add(startNode);
 
     //så långe nodeQueue har en node att ta så ska den köra
@@ -269,7 +272,7 @@ class GeneralSearch {
       Cell currentCell = nl.cells[abs(index)];
 
       //om distanse från start och nuvarande node är större eller lika med de distanses som ges reconstruerea path
-      if (dist(start.x, start.y, currentNode.position.x, currentNode.position.y) >= distance && currentCell.region == region) {
+      if (dist(tank.position.x, tank.position.y, currentNode.position.x, currentNode.position.y) >= distance && currentCell.region == region) {
         this.path = reconstructPath(currentNode, nl.minRec);
         hasPath = true;
         return true;
@@ -280,11 +283,16 @@ class GeneralSearch {
 
         int neighbourIndex = currentCell.neighboures.get(i);
         Cell c = nl.getCell(neighbourIndex);
-        
-        if(currentCell.region == region && c.region != region){continue;}
+
+        if (currentCell.region == region && c.region != region) {
+          continue;
+        }
+        if (nl.cells[neighbourIndex].occupier != null && nl.cells[neighbourIndex].occupier != tank ) {
+          continue;
+        }
         //if(!c.isWalkable){continue;}
         //Kolla om cell är valid och om tanken verklige får gå på cellen
-   
+
 
         //få position från cell
         PVector p = nl.cells[neighbourIndex].pos;
@@ -332,28 +340,28 @@ class GeneralSearch {
      //fill(color(0,0,0), 100);
      // text("g " +round(visited.get(i).pathCost)+ " h" + round(visited.get(i).heuristicCost)+ " = "+ round(visited.get(i).sum), (float)point.x +10, (float)point.y);
      }
-
-
-    for (int i = 0; i < 31*31; i++) {
-      if (reached[i] == null) {
-        continue;
-      }
-      Vector2D point = new Vector2D(reached[i].position.x, reached[i].position.y);
-      fill(color(255, 0, 0), 100);
-      circle((float)point.x, (float)point.y, 10);
-    }
-
-
-    for (int i = 0; i < path.size(); i++) {
-      Vector2D point = new Vector2D(path.get(i).x(), path.get(i).y());
-      fill(color(0, 255, 0), 100);
-      if (i+1 < path.size()) {
-        Vector2D next = new Vector2D(path.get(i+1).x(), path.get(i+1).y());
-        line((float)point.x, (float)point.y, (float)next.x, (float)next.y);
-      }
-      circle((float)point.x, (float)point.y, 10);
-    }
-         */
+     
+     
+     for (int i = 0; i < 31*31; i++) {
+     if (reached[i] == null) {
+     continue;
+     }
+     Vector2D point = new Vector2D(reached[i].position.x, reached[i].position.y);
+     fill(color(255, 0, 0), 100);
+     circle((float)point.x, (float)point.y, 10);
+     }
+     
+     
+     for (int i = 0; i < path.size(); i++) {
+     Vector2D point = new Vector2D(path.get(i).x(), path.get(i).y());
+     fill(color(0, 255, 0), 100);
+     if (i+1 < path.size()) {
+     Vector2D next = new Vector2D(path.get(i+1).x(), path.get(i+1).y());
+     line((float)point.x, (float)point.y, (float)next.x, (float)next.y);
+     }
+     circle((float)point.x, (float)point.y, 10);
+     }
+     */
   }
 
 
@@ -400,14 +408,14 @@ class GeneralSearch {
       Node currentNode = nodeQueue.poll();
       int index = nl.getCellPosition(currentNode.position);
       Cell currentCell = nl.cells[index];
-    
+
       //Gå igenom all grannar till noden
       for (int i = 0; i < currentCell.neighboures.size(); i++) {
         int neighbourIndex = currentCell.neighboures.get(i);
         if (!nl.isValidIndex(neighbourIndex)) {
           continue;
         }
-        
+
         //få grannens cell position
         PVector p = nl.cells[neighbourIndex].pos;
         if (!nl.cells[neighbourIndex].isWalkable ) {

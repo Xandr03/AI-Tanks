@@ -28,7 +28,7 @@ public class TankPatroleState extends State {
       }
       if (t.AP().pathRouteLength() <= 0) {
         t.velocity(0,0);
-        if (GS.computeStep(new PVector((float)t.pos().x, (float)t.pos().y), 100, GridRegion.B, t.team.nav)) {
+        if (GS.computeStep(t, 100, GridRegion.B, t.team.nav)) {
           t.velocity(new Vector2D(0, 0));
           t.AP().pathSetRoute(GS.path);
         }

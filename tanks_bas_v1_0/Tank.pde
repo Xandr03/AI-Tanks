@@ -8,10 +8,12 @@ TankIdleState idle = new TankIdleState();
 
 
 
-final float MAXALLOWEDISTANCE = 100;
-final float MAXSTOPDISTANCE = 100;
-final float MAXMOVEAWAYDISTANCE = 80;
-final float FIELWOFVIEW = 0;
+final float MAXALLOWEDISTANCE =  80;
+final float MAXSTOPDISTANCE = 70;
+final float MAXMOVEAWAYDISTANCE = 60;
+final float FIELWOFVIEW = 180;
+final float FRONTVIEW = 5.0f;
+final float CROSSINGVIEW = 90.0f/2.0f;
 
 final float SHOOTINGDISTANCE = 200;
 
@@ -53,6 +55,8 @@ public class TrafficState {
 
   int priority = -1;
 
+  boolean hasPriority = false;
+
   TrafficState() {
   }
 
@@ -68,7 +72,7 @@ public class TrafficState {
     this.priority = state.priority;
     this.lastGoal = state.lastGoal;
     this.closestDist = state.closestDist;
-
+    this.hasPriority = state.hasPriority;
     this.cantGo = state.cantGo;
   }
 }
@@ -109,6 +113,9 @@ public class TankState {
 
   boolean isShouldWait = false;
 
+  boolean isStopped = false;
+  boolean isWaiting = false;
+  boolean isRotating = false;
   TrafficState tstate = new TrafficState();
   AttackingState astate = new AttackingState();
 
@@ -118,6 +125,8 @@ public class TankState {
   GridRegion regionCur = GridRegion.INV;
 
   Region regionState = null;
+
+  PVector destination = new PVector();
 
   int regionToExplore = -1;
   int hitPoints = 3;
@@ -159,6 +168,10 @@ public class TankState {
     this.isBackingUp = state.isBackingUp;
 
     this.astate = new AttackingState(state.astate);
+    this.isStopped = state.isStopped;
+    this.isRotating = state.isRotating;
+    this.isWaiting = state.isWaiting;
+    this.destination = state.destination;
   }
 }
 
@@ -261,30 +274,34 @@ class Tank extends Vehicle {
     NavLayout nl = team.nav;
     Cell c = this.team.nav.getCell(position);
 
-    PVector direction = VecMath.normalize(VecMath.direction(other.x, other.y, position.x, position.y));
+    PVector direction = VecMath.normalize(VecMath.direction(position.x, position.y, other.x, other.y));
     float bestAngle = 0;
-    Vector2D bestPos = new Vector2D(position.x, position.y);
+    Vector2D bestPos = null;
     for (int n : c.neighboures) {
       Cell oCell = nl.getCell(n);
       PVector cellPos = oCell.pos;
-      PVector cellDir = VecMath.normalize(VecMath.direction(cellPos.x, cellPos.y, position.x, position.y));
+      PVector cellDir = VecMath.normalize(VecMath.direction(position.x, position.y, cellPos.x, cellPos.y));
       float angle = VecMath.dotAngle(cellDir, direction);
-      System.out.print(" Angle: [" +angle + "] ");
-      if (oCell.isWalkable && angle < bestAngle) {
+      //System.out.print(" Angle: [" +angle + "] ");
+      if (oCell.isWalkable && (c.occupier == null || c.occupier == this) && angle < bestAngle) {
         this.tankState.tstate.isObscured = false;
         //System.out.println("--------- Cell To Move To: " + new Vector2D(cellPos.x, cellPos.y).toString());
         bestPos = new Vector2D(cellPos.x, cellPos.y);
       }
     }
     //System.out.println("Did not Find Good Direction");
-    this.tankState.tstate.isObscured = true;
+    if(bestPos == null){
+     this.tankState.tstate.isObscured = true;
+     return new Vector2D(position.x, position.y);
+    }
+   
     return bestPos;
   }
 
   public boolean isInTheWay(PVector pos, PVector heading) {
     PVector direction = VecMath.normalize(VecMath.direction(pos.x, pos.y, position.x, position.y));
     float angle = VecMath.dotAngle(direction, heading);
-    if (direction.mag() <= MAXALLOWEDISTANCE && angle > 0) {
+    if (dist(pos.x, pos.y, position.x, position.y) <= MAXALLOWEDISTANCE && angle > 0) {
       return true;
     }
     return false;
@@ -306,11 +323,23 @@ class Tank extends Vehicle {
   }
 
 
+  boolean RotateToDest() {
+    if (this.tankState.destination == null) {
+      return false;
+    }
+    PVector v = VecMath.normalize(VecMath.direction((float)this.pos().x, (float)this.pos().y, this.tankState.destination.x, this.tankState.destination.y));
+    System.out.println("----------------ROTATE-------------------");
+    this.heading(v.x, v.y);
+    return false;
+  }
+
+
   void wait(float deltaTime) {
-    if (this.tankState.isShouldWait) {
+    if (this.tankState.isWaiting) {
       waitTimer -= deltaTime;
-      if (waitTimer <= 0) {
-        this.tankState.isShouldWait = false;
+      if (waitTimer <= 0 || tankState.tstate.hasPriority) {
+        this.tankState.isStopped = false;
+        this.tankState.isWaiting = false;
       }
     }
   }
@@ -385,6 +414,8 @@ class Tank extends Vehicle {
     this.heading.x = (float)this.heading().x;
     this.heading.y = (float)this.heading().y;
     this.tankState.regionCur = this.team.nav.getCell(new PVector((float)pos().x, (float)pos().y)).region;
+    sensor.checkSurrounding();
+
     runner.update((float)deltaTime);
 
 
@@ -539,14 +570,18 @@ public class TankPic extends PicturePS {
     strokeWeight(1);
     if (t != null) {
       BaseAction action = t.runner.runningTask;
-      if (action != null) {
-        textSize(10);
-        fill(#FF0000);
-        text(action.taskName, posX, posY + 50);
-        text("ID: "+ t.ID, posX, posY + 60);
-        text("PRIO: " + t.tankState.tstate.priority, posX, posY + 70);
-        text("IsInTheWay: "+ t.tankState.tstate.isInTheWay, posX, posY +80);
-        text("IsBackingUp: " + t.tankState.isBackingUp, posX, posY + 90);
+
+      textSize(10);
+      fill(#FF0000);
+
+      text("ID: "+ t.ID, posX, posY + 60);
+      text("PRIO: " + t.tankState.tstate.priority, posX, posY + 70);
+      text("isStopped: "+ t.tankState.isStopped, posX, posY +80);
+      text("isWaiting: " + t.tankState.isWaiting, posX, posY + 90);
+      text("hasPriority: " + t.tankState.tstate.hasPriority, posX, posY + 100);
+      if (t.team.tm.tanks.containsKey(t)) {
+        text("isInTraffic: "+ t.team.tm.tanks.get(t).facingTank, posX, posY + 110);
+        text("isInTraffic: "+ t.team.tm.tanks.get(t).crossingTank, posX, posY + 120);
       }
     }
 
