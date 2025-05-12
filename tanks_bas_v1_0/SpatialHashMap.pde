@@ -205,6 +205,7 @@ public class Cell {
   public boolean isWalkable = true;
   public Tank occupier = null;
 
+  public boolean multiOcc = false;
   public float EnemyDistance = 0;
   public boolean isEnemyNearby = false;
   public boolean isEnemyBase = false;
@@ -515,33 +516,39 @@ public class NavLayout {
 
     rm.update(deltaTime);
     //gå igenom alla tanks sätta ett rött område förutom den första
-    
-    
+
+
     for (int i : tankOnCells) {
-     cells[i].occupier = null;
-     }
-     tankOnCells = new ArrayList(3*3*6);
-     
-     Set<Integer> keys = World.allEntities.keySet();
-     
-     for (Integer v : keys) {
-     
-       BaseEntity base = World.allEntities.get(v);
-       if (base instanceof Tank) {
-       
-         Tank t = (Tank)base;
-         if (t == allTanks[0]) {
-           continue;
-         }
-         int[] list = getCellRecArea(3, 3, new PVector((float)t.pos().x, (float)t.pos().y));
-         
-         for (int i = 0; i < 3*3; i++) {
-           cells[list[i]].occupier = t;
-           tankOnCells.add(list[i]);
-         }
-       }
-     }
-     
+      cells[i].occupier = null;
+      cells[i].multiOcc = false;
+    }
+    tankOnCells = new ArrayList(3*3*6);
+
+    Set<Integer> keys = World.allEntities.keySet();
+
+    for (Integer v : keys) {
+
+      BaseEntity base = World.allEntities.get(v);
+      if (base instanceof Tank) {
+
+        Tank t = (Tank)base;
+        if (t == allTanks[0]) {
+          continue;
+        }
+        int[] list = getCellRecArea(3, 3, new PVector((float)t.pos().x, (float)t.pos().y));
+
+        for (int i = 0; i < 3*3; i++) {
+          if ( cells[list[i]].occupier != null) {
+             cells[list[i]].multiOcc = true;
+          } else {
+            cells[list[i]].occupier = t;
+          }
+
+          tankOnCells.add(list[i]);
+        }
+      }
+    }
+
 
 
     for (int i = 0; i < ObstacleSize; i++) {

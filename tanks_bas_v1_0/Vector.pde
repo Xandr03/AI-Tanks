@@ -1,6 +1,7 @@
 //Alexander Bakas alba5453
 public static class VecMath {
-
+  
+  
   public static float dot(PVector v, PVector w) {
     return ((v.x * w.x) + ( v.y * w.y));
   }

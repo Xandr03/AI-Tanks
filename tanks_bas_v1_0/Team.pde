@@ -84,13 +84,13 @@ class TrafficManager {
   private void updateTrafficTank(Tank tank) {
     Set<Tank> keySet = tanks.keySet();
     TrafficTank trafficTank = tanks.get(tank);
-    /*
+    
     if(tank.tankState.tstate.isObscured){
       trafficTank.facingTank = 0;
       trafficTank.crossingTank = 0;
       return;
     }
-    */
+    
     for (Tank t : keySet) {
       trafficTank.facingTank = isFacingTank(tank, t);
       trafficTank.crossingTank = isCrossingTank(tank, t);

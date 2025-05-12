@@ -1,4 +1,4 @@
-//Alexander Bakas alba5453 //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
+//Alexander Bakas alba5453 //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
 
 
 import game2dai.entities.*;
@@ -38,7 +38,7 @@ color team0Color;
 PVector team0_tank0_startpos;
 PVector team0_tank1_startpos;
 PVector team0_tank2_startpos;
-Tank tank0, tank1, tank2;  //<>// //<>// //<>// //<>// //<>//
+Tank tank0, tank1, tank2;  //<>// //<>// //<>// //<>// //<>// //<>//
 
 // Team1
 color team1Color;
@@ -98,7 +98,7 @@ void setup()
   allTrees[1].renderer(treeImage);
   allTrees[2].renderer(treeImage);
 
-
+  System.out.println(tan(radians(90)));
   tank_size = 50;
 
   // Team0

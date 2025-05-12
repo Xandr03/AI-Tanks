@@ -7,10 +7,10 @@ TankGlobalState tankGlobalState = new TankGlobalState();
 TankIdleState idle = new TankIdleState();
 
 
-
-final float MAXALLOWEDISTANCE =  80;
-final float MAXSTOPDISTANCE = 70;
-final float MAXMOVEAWAYDISTANCE = 60;
+final float TANKRADIUS = 0;
+final float MAXALLOWEDISTANCE =  80 + TANKRADIUS;
+final float MAXSTOPDISTANCE = 80 + TANKRADIUS;
+final float MAXMOVEAWAYDISTANCE = 75 + TANKRADIUS;
 final float FIELWOFVIEW = 180;
 final float FRONTVIEW = 5.0f;
 final float CROSSINGVIEW = 90.0f/2.0f;
@@ -208,6 +208,8 @@ class Tank extends Vehicle {
   Team oposition;
 
 
+  Turret turret;
+
   float sensArea = 50;
 
 
@@ -253,7 +255,7 @@ class Tank extends Vehicle {
     // this.addFSM();
     //this.FSM().setGlobalState(tankGlobalState);
     // this.FSM().changeState(idle);
-
+    turret = new Turret(this, new PVector(0, 1));
     sensor = new Sensor(this, 2, 1);
     this.path.owner = this;
     this.oposition = oposition;
@@ -283,18 +285,18 @@ class Tank extends Vehicle {
       PVector cellDir = VecMath.normalize(VecMath.direction(position.x, position.y, cellPos.x, cellPos.y));
       float angle = VecMath.dotAngle(cellDir, direction);
       //System.out.print(" Angle: [" +angle + "] ");
-      if (oCell.isWalkable && (c.occupier == null || c.occupier == this) && angle < bestAngle) {
+      if (oCell.isWalkable && (oCell.occupier == null || oCell.occupier == this) && !oCell.multiOcc && angle < bestAngle) {
         this.tankState.tstate.isObscured = false;
         //System.out.println("--------- Cell To Move To: " + new Vector2D(cellPos.x, cellPos.y).toString());
         bestPos = new Vector2D(cellPos.x, cellPos.y);
       }
     }
     //System.out.println("Did not Find Good Direction");
-    if(bestPos == null){
-     this.tankState.tstate.isObscured = true;
-     return new Vector2D(position.x, position.y);
+    if (bestPos == null) {
+      this.tankState.tstate.isObscured = true;
+      return new Vector2D(position.x, position.y);
     }
-   
+
     return bestPos;
   }
 
@@ -415,6 +417,9 @@ class Tank extends Vehicle {
     this.heading.y = (float)this.heading().y;
     this.tankState.regionCur = this.team.nav.getCell(new PVector((float)pos().x, (float)pos().y)).region;
     sensor.checkSurrounding();
+    if (this.AP().pathNextNode() != null) {
+      turret.rotateTurret(new PVector(400, 400));
+    }
 
     runner.update((float)deltaTime);
 
@@ -500,6 +505,16 @@ class Tank extends Vehicle {
     }
   }
 
+  void death() {
+  }
+
+  void doDamage(Tank damager) {
+    this.tankState.hitPoints -=1;
+    if (tankState.hitPoints <= 0) {
+      this.death();
+    }
+  }
+
   //======================================
   //Här är det tänkt att agenten har möjlighet till egna val.
 
@@ -525,7 +540,23 @@ class Tank extends Vehicle {
   }
 }
 
+public class Turret {
+  Tank owner;
 
+  PVector forwardVector;
+
+  float currentAngle;
+
+  Turret(Tank owner, PVector forwardVector) {
+    this.forwardVector = forwardVector;
+    this.owner = owner;
+  }
+
+  void rotateTurret(PVector destination) {
+    PVector direction = VecMath.normalize(VecMath.direction(owner.position.x, owner.position.y, destination.x, destination.y));
+    forwardVector = forwardVector.lerp(direction, 0.1).normalize();
+  }
+}
 
 public class TankPic extends PicturePS {
 
@@ -557,7 +588,7 @@ public class TankPic extends PicturePS {
       Hints.draw(app, user, velX, velY, headX, headY);
     }
     // Determine the angle the tank is heading
-    float angle = PApplet.atan2(headY, headX);
+    float angle = PApplet.atan2(t.turret.forwardVector.y, t.turret.forwardVector.x);
 
 
 
@@ -579,6 +610,7 @@ public class TankPic extends PicturePS {
       text("isStopped: "+ t.tankState.isStopped, posX, posY +80);
       text("isWaiting: " + t.tankState.isWaiting, posX, posY + 90);
       text("hasPriority: " + t.tankState.tstate.hasPriority, posX, posY + 100);
+      text("cantGo: " + t.tankState.tstate.hasPriority, posX, posY + 130);
       if (t.team.tm.tanks.containsKey(t)) {
         text("isInTraffic: "+ t.team.tm.tanks.get(t).facingTank, posX, posY + 110);
         text("isInTraffic: "+ t.team.tm.tanks.get(t).crossingTank, posX, posY + 120);
@@ -606,7 +638,7 @@ public class TankPic extends PicturePS {
     //kanontornet
     ellipse(0, 0, size/2, size/2);
     strokeWeight(3);
-    float cannon_length = size/2;
+    float cannon_length = size/1.5;
     line(0, 0, cannon_length, 0);
 
     imageMode(CORNER);

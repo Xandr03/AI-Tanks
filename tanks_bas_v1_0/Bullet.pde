@@ -65,6 +65,10 @@ public class Bullet {
       }
 
       if (CollisionChecker.checkCollision(new CircleBox(position, size), new CircleBox(new PVector((float)base.pos().x, (float)base.pos().y), (float)base.colRadius()))) {
+        if(base instanceof Tank){
+          Tank t = (Tank)base;
+          t.doDamage(owner);
+        }
         return true;
       }
     }

@@ -127,7 +127,7 @@ class GeneralSearch {
         if (!nl.isValidIndex(neighbourIndex)) {
           continue;
         }
-        if (nl.cells[neighbourIndex].occupier != null && nl.cells[neighbourIndex].occupier != tank ) {
+        if (nl.cells[neighbourIndex].occupier != null && nl.cells[neighbourIndex].occupier != tank && nl.cells[neighbourIndex].multiOcc  ) {
           continue;
         }
         //få position från cell
@@ -272,7 +272,7 @@ class GeneralSearch {
       Cell currentCell = nl.cells[abs(index)];
 
       //om distanse från start och nuvarande node är större eller lika med de distanses som ges reconstruerea path
-      if (dist(tank.position.x, tank.position.y, currentNode.position.x, currentNode.position.y) >= distance && currentCell.region == region) {
+      if (dist(tank.position.x, tank.position.y, currentNode.position.x, currentNode.position.y) >= distance && (currentCell.region == region || region == GridRegion.INV)) {
         this.path = reconstructPath(currentNode, nl.minRec);
         hasPath = true;
         return true;
@@ -284,7 +284,7 @@ class GeneralSearch {
         int neighbourIndex = currentCell.neighboures.get(i);
         Cell c = nl.getCell(neighbourIndex);
 
-        if (currentCell.region == region && c.region != region) {
+        if (region != GridRegion.INV && currentCell.region == region && c.region != region) {
           continue;
         }
         if (nl.cells[neighbourIndex].occupier != null && nl.cells[neighbourIndex].occupier != tank ) {

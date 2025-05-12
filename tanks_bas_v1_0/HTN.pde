@@ -339,14 +339,14 @@ public class CheckTraffic extends HighLevelAction {
 
     //BackUp
     refinments.add(new Refinment(
-      s -> s.tank.isFriendlyClose && s.tank.tstate.closestDist <= MAXMOVEAWAYDISTANCE && !s.tank.isStopped && s.tank.tstate.hasPriority == false ,
+      s -> s.tank.isFriendlyClose && s.tank.tstate.closestDist <= MAXMOVEAWAYDISTANCE && s.tank.tstate.hasPriority == false,
       tasks3
       ));
 
 
     //Yield
     refinments.add(new Refinment(
-      s -> (s.tank.isFriendlyClose && s.tank.tstate.hasPriority == false),
+      s -> (s.tank.isFriendlyClose && s.tank.tstate.hasPriority == false && s.tank.tstate.closestDist > MAXMOVEAWAYDISTANCE),
       tasks2
       ));
   }
@@ -393,7 +393,6 @@ public class BackUp extends Action {
   public void execute(Tank tank, float deltaTime) {
 
     tank.tankState.tstate.isInTraffic = true;
-    tank.velocity(0,0);
 
     for (TankData other : tank.tankState.tstate.otherTanks) {
 
@@ -496,7 +495,7 @@ public class ExploreHLA extends HighLevelAction {
   ExploreHLA() {
     taskName = "ExploreHLA";
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
-    tasks1.addAll(Arrays.asList(new ExploreRegion()));
+    tasks1.addAll(Arrays.asList( new ExploreMap() /*new ExploreRegion()*/));
     refinments.add(new Refinment(
       state -> true,
       tasks1
@@ -507,9 +506,16 @@ public class ExploreHLA extends HighLevelAction {
 public class ExploreMap extends HighLevelAction {
 
   ExploreMap() {
-    //refinments.add(new WalkAround());
+    taskName = "ExploreMap";
+    ArrayList<BaseAction> tasks1 = new ArrayList<>();
+    tasks1.addAll(Arrays.asList(new WalkAround()));
+    refinments.add(new Refinment(
+      s -> (s.IsWorldPeacefull && s.tank.isWaiting == false),
+      tasks1
+      ));
   }
 }
+
 
 
 public class ExploreRegion extends HighLevelAction {
@@ -689,16 +695,15 @@ public class MoveInRegion extends Action {
   }
 }
 
-
-
 //Tank position compared to Region and calculate if they have been in there for over 10 seconds
 public class WalkAround extends Action {
 
-  boolean pointSet = false;
-  float time = 0;
+  WalkAround() {
+    taskName = "WalkAround";
+  }
 
   public boolean preCondition(HTNState state) {
-    return state.IsWorldPeacefull;
+    return true;
   }
 
   public HTNState effect(HTNState state) {
@@ -708,21 +713,16 @@ public class WalkAround extends Action {
   }
 
   public void execute(Tank tank, float deltaTime) {
-    time += deltaTime* 1;
-    if (time >= 30) {
-      state = execState.Failed;
-    }
-
     if (tank.AP().pathRouteLength() <= 0) {
-      if (pointSet) {
-        state = execState.Success;
-        return;
-      }
-      if (GS.computeStep(tank, 100, GridRegion.values()[tank.ID], tank.team.nav)) {
+      if (GS.computeStep(tank, 200, GridRegion.INV, tank.team.nav)) {
+        System.out.println("WalkAROUUNNND");
         tank.AP().pathSetRoute(GS.path);
-        pointSet = true;
+         tank.tankState.tstate.lastGoal = new PVector((float)tank.AP().pathRoute().getLast().x(), (float)tank.AP().pathRoute().getLast().y());
+        tank.tankState.destination = new PVector((float)tank.AP().pathRoute().getLast().x(), (float)tank.AP().pathRoute().getLast().y());
+        state = execState.Success;
       }
     }
+    state = execState.Success;
   }
 }
 
@@ -730,7 +730,7 @@ public class AttackHLA extends HighLevelAction {
   AttackHLA() {
     taskName = "AttackHLA";
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
-    tasks1.addAll(Arrays.asList(new MoveToTarget()));
+    tasks1.addAll(Arrays.asList(new MoveToTarget(), new Rotate(), new Shoot()));
     refinments.add(new Refinment(
       s -> true,
       tasks1
