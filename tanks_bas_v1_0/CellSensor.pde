@@ -55,7 +55,7 @@ class Sensor {
 
     possibleCollisions = new ArrayList<>();
     owner.tankState.isEnemyInRange = false;
-    for (MovingEntity me : world.getMovers(owner, owner.sensArea)) {
+    for (MovingEntity me : world.getMovers(owner, 800)) {
       if (me == owner) {
         continue;
       }
@@ -67,6 +67,39 @@ class Sensor {
       }
     }
     return possibleCollisions;
+  }
+
+
+  boolean checkIfInWayOfView(Tank tank, Tank other) {
+
+    Set<Integer> keySet = World.allEntities.keySet();
+
+
+    for (Integer index : keySet) {
+      BaseEntity base =World.allEntities.get(index);
+      if(base instanceof Tank){continue;}
+      if (CollisionChecker.lineCircle(tank.position.x, tank.position.y, other.position.x, other.position.y, (float)base.pos().x, (float)base.pos().y, (float)base.colRadius())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+
+
+  void checkFrontSight() {
+    for (Tank tank : owner.oposition.tanks) {
+      if (tank == null) {
+        continue;
+      }
+      PVector direction = VecMath.normalize(VecMath.direction(owner.position.x, owner.position.y, tank.position.x, tank.position.y));
+      float angle = VecMath.dotAngle(direction, owner.turret.forwardVector);
+      float dist = dist(owner.position.x, owner.position.y, tank.position.x, tank.position.y);
+      if (dist <= VIEWDISTANCE && angle >= 0 && !checkIfInWayOfView(owner, tank)) {
+        owner.tankState.isEnemyInRange  = true;
+        owner.team.sendEnemySpotted(owner, tank);
+      }
+    }
   }
 
 
@@ -87,6 +120,8 @@ class Sensor {
       checkPriority();
     }
 
+
+    checkFrontSight();
     /*
     if (tank.tankState.tstate.closestDist > MAXALLOWEDISTANCE ) {
      tank.team.tm.leaveTraffic(tank);
@@ -99,13 +134,9 @@ class Sensor {
     for (Tank t : others) {
       PVector tankPos = new PVector((float)t.pos().x, (float)t.pos().y);
       PVector otherDirection = VecMath.normalize(VecMath.direction(owner.position.x, owner.position.y, tankPos.x, tankPos.y));
-
-
       float angle = VecMath.dotAngle(otherDirection, owner.heading);
       if (t.team != owner.team) {
-        owner.tankState.isEnemyInRange  = true;
-        owner.team.WorldState.enemyTanks[t.ID] = new TankData(tankPos, t.ID, t, -1);
-        return;
+        continue;
       } else {
         owner.tankState.isFriendlyClose = true;
         float dist = dist(tankPos.x, tankPos.y, (float)owner.pos().x, (float)owner.pos().y);

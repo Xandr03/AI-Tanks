@@ -36,7 +36,7 @@ class TrafficTank implements Comparable<TrafficTank> {
     if (otherDestination != null) {
       otherDestLength = round(otherDestination.mag());
     }
-    
+
     int sum = crossingTank + facingTank + destLength;
     int otherSum = other.facingTank + other.crossingTank + otherDestLength;
     if (sum > otherSum) {
@@ -60,8 +60,8 @@ class TrafficManager {
     if (tanks.containsKey(tank)) {
       //System.out.println("ALREADY CONTAINS");
       updateTrafficTank(tank);
-    } else {
-
+    } 
+    else {
       tank.tankState.tstate.isInTraffic = true;
       tanks.put(tank, new TrafficTank(tank));
       updateTrafficTank(tank);
@@ -84,13 +84,13 @@ class TrafficManager {
   private void updateTrafficTank(Tank tank) {
     Set<Tank> keySet = tanks.keySet();
     TrafficTank trafficTank = tanks.get(tank);
-    
-    if(tank.tankState.tstate.isObscured){
+
+    if (tank.tankState.tstate.isObscured || tank.tankState.hitPoints == 2) {
       trafficTank.facingTank = 0;
       trafficTank.crossingTank = 0;
       return;
     }
-    
+
     for (Tank t : keySet) {
       trafficTank.facingTank = isFacingTank(tank, t);
       trafficTank.crossingTank = isCrossingTank(tank, t);
@@ -119,49 +119,6 @@ class TrafficManager {
       currentPriorityTank.tankState.tstate.hasPriority = true;
     }
   }
-
-  /*
-  LinkedList<Tank> tanks = new LinkedList<>();
-   int size;
-   
-   
-   void putSelfLast(Tank tank) {
-   Tank peek = tanks.peek();
-   if (peek == tank) {
-   tanks.pop();
-   enterTraffic(tank);
-   }
-   }
-   
-   void enterTraffic(Tank tank) {
-   if (tanks.contains(tank)) {
-   return;
-   }
-   tanks.add(tank);
-   if (tanks.peek() == tank) {
-   tank.tankState.tstate.priority = 0;
-   return;
-   }
-   tank.tankState.tstate.priority = 1;
-   }
-   
-   void leaveTraffic(Tank tank) {
-   if (tanks.peek() == tank) {
-   tank.tankState.tstate.priority = -1;
-   tanks.pop();
-   if (tanks.peek() == null) {
-   return;
-   }
-   tanks.peek().tankState.tstate.priority = 0;
-   return;
-   }
-   if (tanks.contains(tank)) {
-   tank.tankState.tstate.priority = -1;
-   tanks.remove(tank);
-   }
-   }
-   
-   */
 
   int isFacingTank(Tank tank, Tank other) {
     if (tank.sensor.isInFront(tank, other)) {
@@ -197,6 +154,47 @@ class TrafficManager {
     }
   }
 }
+
+
+
+public class EnemyTank {
+  PVector lastKnownPosition;
+  int hitPoints = 3;
+  int focusCount = 0;
+  float dist;
+  int id;
+
+
+  EnemyTank(int id, int hitPoints, PVector lkp) {
+    this.id = id;
+    this.hitPoints = hitPoints;
+    this.lastKnownPosition = lkp;
+  }
+
+  EnemyTank(EnemyTank et, Tank tank) {
+    if(et == null){return;}
+    this.lastKnownPosition = et.lastKnownPosition;
+    this.hitPoints = et.hitPoints;
+    this.focusCount = et.focusCount;
+    this.dist = dist(et.lastKnownPosition.x, et.lastKnownPosition.y, tank.position.x, tank.position.y);
+    this.id = et.id;
+  }
+
+  void addAsTarget(Tank tank) {
+    this.focusCount += 1;
+    tank.tankState.astate.isAttacking = true;
+    tank.tankState.astate.enemyTarget = new EnemyTank(this, tank);
+  }
+
+  void removeAsTarget(Tank tank) {
+    this.focusCount -= 1;
+    tank.tankState.astate.isAttacking = false;
+    tank.tankState.astate.enemyTarget = null;
+  }
+}
+
+
+
 
 class Team {
 
@@ -268,6 +266,45 @@ class Team {
    tanks[otherID].tankState.tstate.priority = otherPrio;
    }
    */
+   
+  void sendEnemyKilled(int id){
+    EnemyTank et = WorldState.enemyTanks[id];
+    if(et == null){return;}
+    for(Tank t: tanks){
+      if(t == null || t.tankState.astate.enemyTarget == null){continue;}
+      if(t.tankState.astate.enemyTarget.id == et.id){
+        et.removeAsTarget(t);
+      }
+    }
+    WorldState.enemyTanks[et.id] = null;
+  }
+
+  void sendEnemySpotted(Tank sender, Tank spotted) {
+    if(spotted.tankState.isDead){
+      return;
+    }
+    WorldState.enemyTanks[spotted.ID] = new EnemyTank(spotted.ID, spotted.tankState.hitPoints, spotted.position);
+    EnemyTank et = WorldState.enemyTanks[spotted.ID];
+    
+    Tank mostFittingTank = null;
+    float currentMinDist = Integer.MAX_VALUE;
+    for (Tank t : tanks) {
+      if(t == null){continue;}
+      float value = t.bid(sender, et);
+      if (value == Integer.MIN_VALUE) {
+        et.addAsTarget(t);
+      }
+      if (value < currentMinDist && t != sender) {
+        currentMinDist = value;
+        mostFittingTank = t;
+      }
+    }
+    if (mostFittingTank != null) {
+      et.addAsTarget(mostFittingTank);
+    }
+  }
+
+
 
   Team(color teamColor, PVector pos, Teams team, NavLayout nav) {
     this.position = pos;

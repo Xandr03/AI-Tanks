@@ -48,7 +48,7 @@ public class HTNState {
   int enemiesLeft = 3;
   RegionManager rm;
 
-  TankData[] enemyTanks = new TankData[3];
+  EnemyTank[] enemyTanks = new EnemyTank[3];
 
   //Regions
 
@@ -76,7 +76,7 @@ public class HTNState {
     this.enemiesLeft = state.enemiesLeft;
     this.tank = new TankState(tankState, tank);
     for (int i = 0; i < 3; i++) {
-      this.enemyTanks[i] = state.enemyTanks[i];
+      this.enemyTanks[i] = new EnemyTank(state.enemyTanks[i], tank);
     }
   }
 }
@@ -109,7 +109,7 @@ public class Plan_runner {
 
   void update(float deltaTime) {
     //System.out.println("update");
-    if (runningTask == null && sequence.isEmpty()) {
+    if (runningTask == null && sequence != null && sequence.isEmpty()) {
       HTNState tankWorldState = new HTNState(owner.team.WorldState, owner.tankState, owner);
 
       setTasks(planner.Search(new BeTank(), tankWorldState));
@@ -276,30 +276,39 @@ public class BeTank extends HighLevelAction {
     tasks1.addAll(Arrays.asList(new AttackHLA()));
 
     ArrayList<BaseAction> tasks2 = new ArrayList<>();
-    tasks2.addAll(Arrays.asList(new ExploreHLA()));
+    tasks2.addAll(Arrays.asList(new Rotate(), new ExploreHLA()));
 
     ArrayList<BaseAction> tasks3 = new ArrayList<>();
-    tasks3.addAll(Arrays.asList(new TrafficHLA()));
+    tasks3.addAll(Arrays.asList(new Rotate(), new TrafficHLA()));
+
+    ArrayList<BaseAction> tasks4 = new ArrayList<>();
+    tasks4.addAll(Arrays.asList(new Idle()));
+
+    //Idle
+    refinments.add(new Refinment(
+      state -> state.tank.hitPoints <= 1,
+      tasks4
+      ));
 
     //TrafficHLA
     refinments.add(new Refinment(
-      s -> s.tank.tstate.isInTraffic == true,
+      s -> s.tank.tstate.isInTraffic == true && s.tank.isIdle == false,
       tasks3
       ));
 
     //ExploreHLA
     refinments.add(new Refinment(
-      s -> s.tank.tstate.isInTraffic == false || s.tank.tstate.hasPriority == true,
+      s -> (s.tank.tstate.isInTraffic == false || s.tank.tstate.hasPriority == true) &&
+      s.tank.astate.isAttacking == false && s.tank.isIdle == false && s.tank.tstate.cantGo == false,
+
       tasks2
       ));
 
-    /*
     //AttackHLA
-     refinments.add(new Refinment(
-     state -> !state.IsWorldPeacefull && state.tank.isEnemyInRange,
-     tasks1
-     ));
-     */
+    refinments.add(new Refinment(
+      state -> state.tank.astate.isAttacking,
+      tasks1
+      ));
   }
 }
 
@@ -406,6 +415,8 @@ public class BackUp extends Action {
         }
         tank.AP().pathAddToRoute(new Vector2D[]{potentialDest});
         tank.tankState.isBackingUp = true;
+        state = execState.Success;
+        return;
       }
 
       /*
@@ -419,6 +430,7 @@ public class BackUp extends Action {
        }
        */
     }
+
     state = execState.Success;
   }
 }
@@ -486,6 +498,29 @@ public class Wait extends Action {
   }
 }
 
+
+
+public class Idle extends Action {
+
+  Idle() {
+    taskName = "Idle";
+  }
+
+  public boolean preCondition(HTNState s) {
+    return true;
+  }
+
+  public HTNState effect(HTNState s) {
+    s.tank.isIdle = true;
+    return s;
+  }
+
+  public void execute(Tank tank, float deltaTime) {
+    tank.velocity(0, 0);
+    tank.AP().pathOff();
+    state = execState.Success;
+  }
+}
 
 
 
@@ -717,7 +752,7 @@ public class WalkAround extends Action {
       if (GS.computeStep(tank, 200, GridRegion.INV, tank.team.nav)) {
         System.out.println("WalkAROUUNNND");
         tank.AP().pathSetRoute(GS.path);
-         tank.tankState.tstate.lastGoal = new PVector((float)tank.AP().pathRoute().getLast().x(), (float)tank.AP().pathRoute().getLast().y());
+        tank.tankState.tstate.lastGoal = new PVector((float)tank.AP().pathRoute().getLast().x(), (float)tank.AP().pathRoute().getLast().y());
         tank.tankState.destination = new PVector((float)tank.AP().pathRoute().getLast().x(), (float)tank.AP().pathRoute().getLast().y());
         state = execState.Success;
       }
@@ -749,9 +784,10 @@ public class MoveToTarget extends HighLevelAction {
 
     //Refinement 1
     refinments.add(new Refinment(
-      s -> s.tank.hitPoints > 3,
+      s -> true,
       tasks1
       ));
+
 
     //Refinemnt 2
     refinments.add(new Refinment(
@@ -761,23 +797,94 @@ public class MoveToTarget extends HighLevelAction {
   }
 }
 
-public class MoveAtDistance extends Action {
 
+
+public class MoveCloseToTarget extends HighLevelAction {
+
+  MoveCloseToTarget() {
+    taskName = "MoveCloseToTarget";
+
+    ArrayList<BaseAction> tasks1 = new ArrayList<>();
+    tasks1.addAll(Arrays.asList(new MoveEnemyTarget()));
+
+    ArrayList<BaseAction> tasks2 = new ArrayList<>();
+    tasks2.addAll(Arrays.asList(new Stop(), new Wait()));
+
+    refinments.add(new Refinment(
+      s -> s.tank.astate.enemyTarget.dist > CLOSEFIRERANGE,
+      tasks1
+      ));
+
+    refinments.add(new Refinment(
+      s -> s.tank.astate.enemyTarget.dist <= CLOSEFIRERANGE,
+      tasks2
+      ));
+  }
+}
+
+
+public class MoveAtDistance extends HighLevelAction {
+
+  MoveAtDistance() {
+    taskName = "MoveAtDistance";
+
+    ArrayList<BaseAction> tasks1 = new ArrayList<>();
+    tasks1.addAll(Arrays.asList(new MoveEnemyTarget()));
+
+    ArrayList<BaseAction> tasks2 = new ArrayList<>();
+    tasks2.addAll(Arrays.asList(new MoveAwayFromEnemy()));
+
+    refinments.add(new Refinment(
+      s -> s.tank.astate.enemyTarget.dist > LONGFIRERANGE,
+      tasks1
+      ));
+
+    refinments.add(new Refinment(
+      s -> s.tank.astate.enemyTarget.dist <= LONGFIRERANGE,
+      tasks2
+      ));
+  }
+}
+
+public class MoveAwayFromEnemy extends Action {
+  MoveAwayFromEnemy() {
+    taskName = "MoveAwayFromEnemy";
+  }
   public boolean preCondition(HTNState state) {
-    return false;
+    return true;
   }
 
-  public  HTNState effect(HTNState state) {
+  public HTNState effect(HTNState state) {
     //Closer to target
     return state;
   }
 
   void execute(Tank tank, float deltaTime) {
+    if (tank == null) {
+      state = execState.Success;
+      return;
+    }
+    EnemyTank et = tank.tankState.astate.enemyTarget;
+    if (et == null) {
+      state = execState.Success;
+      return;
+    }
+    tank.AP().pathOn();
+    tank.AP().pathRoute().clear();
+    Vector2D potentialDest = tank.getGoodDirection(et.lastKnownPosition);
+    tank.AP().pathAddToRoute(new Vector2D[]{potentialDest});
+    tank.tankState.isBackingUp = true;
     state = execState.Success;
   }
 }
 
-public class MoveCloseToTarget extends Action {
+
+class MoveEnemyTarget extends Action {
+
+  MoveEnemyTarget() {
+    taskName = "MoveEnemyTarget";
+  }
+
 
   public boolean preCondition(HTNState state) {
     return true;
@@ -789,6 +896,14 @@ public class MoveCloseToTarget extends Action {
   }
 
   void execute(Tank tank, float deltaTime) {
+    if (tank.tankState.astate.enemyTarget == null) {
+      state = execState.Success;
+      return;
+    }
+    PVector otherPos = tank.tankState.astate.enemyTarget.lastKnownPosition;
+    if (GS.computePath(tank, otherPos, tank.team.nav, GeneralSearch.ASTAR)) {
+      tank.AP().pathSetRoute(GS.path);
+    }
     state = execState.Success;
   }
 }
@@ -809,6 +924,17 @@ class Rotate extends Action {
   }
 
   void execute(Tank tank, float deltaTime) {
+    if (tank == null) {
+      return;
+    }
+    
+    if (tank.tankState.astate.isAttacking) {
+      tank.tankState.astate.isAligned = tank.turret.rotateTurret(tank.tankState.astate.enemyTarget.lastKnownPosition, deltaTime);
+    } else {
+      tank.turret.rotateHeading(tank.heading);
+    }
+
+
     state = execState.Success;
   }
 }
@@ -820,8 +946,7 @@ class Shoot extends Action {
   }
 
   public boolean preCondition(HTNState state) {
-
-    return true;
+    return state.tank.astate.isReloading == false && state.tank.astate.enemyTarget.dist <= LONGFIRERANGE;
   }
 
   public HTNState effect(HTNState state) {
@@ -830,7 +955,34 @@ class Shoot extends Action {
   }
 
   void execute(Tank tank, float deltaTime) {
-    bm.CreateBullet(tank.position, tank.heading, 100.0f, tank);
+
+    if (tank == null) {
+      state = execState.Success;
+      return;
+    }
+    
+    if(!tank.tankState.astate.isAligned){
+      return;
+    }
+
+    PVector start = tank.position;
+    PVector end =  new PVector(tank.turret.forwardVector.x,tank.turret.forwardVector.y);
+    
+    end = end.mult(300);
+    
+    for (Tank t : tank.team.tanks) {
+      if (t == null ||t == tank) {
+        continue;
+      }
+
+      if (CollisionChecker.lineCircle(start.x, start.y, end.x, end.y, t.position.x, t.position.y, 50)) {
+        state = execState.Success;
+        return;
+      }
+    }
+
+    bm.CreateBullet(tank.position, tank.turret.forwardVector, 100.0f, tank);
+    tank.tankState.astate.isReloading = true;
     state = execState.Success;
   }
 }

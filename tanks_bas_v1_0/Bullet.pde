@@ -4,7 +4,7 @@ public class BulletManager {
 
   ArrayList<Bullet> bullets = new ArrayList<>();
 
-  public void CreateBullet(PVector start, PVector velocity, float speed, BaseEntity owner) {
+  public void CreateBullet(PVector start, PVector velocity, float speed, Tank owner) {
     bullets.add(new Bullet(start, velocity, speed, owner));
   }
 
@@ -37,9 +37,9 @@ public class Bullet {
 
   float size = 10;
 
-  BaseEntity owner;
+  Tank owner;
 
-  Bullet(PVector start, PVector velocity, float speed, BaseEntity owner) {
+  Bullet(PVector start, PVector velocity, float speed, Tank owner) {
     this.position = new PVector(start.x, start.y);
     this.velocity = new PVector(velocity.x, velocity.y);
     this.speed = speed;
@@ -47,8 +47,8 @@ public class Bullet {
   }
 
   void move(float deltaTime) {
-    position.x += velocity.x *speed * deltaTime;
-    position.y += velocity.y *speed * deltaTime;
+    position.x += velocity.x * speed * deltaTime;
+    position.y += velocity.y * speed * deltaTime;
   }
 
   void draw() {

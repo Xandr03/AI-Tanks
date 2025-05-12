@@ -17,7 +17,7 @@ import java.util.function.*;
 
 // Implement priority in Traffic, or a manager, that checks and decides who can drive ahead
 // with potenitellt contract net protocol
-//TODO fix a search algorithm that can take a direction and walk the tank back ward for example, so it dosent collide with trees and stop at the closest position that is availible 
+//TODO fix a search algorithm that can take a direction and walk the tank back ward for example, so it dosent collide with trees and stop at the closest position that is availible
 
 int SearchOption = 100;
 
@@ -31,14 +31,14 @@ PImage tree_img;
 PVector tree1_pos, tree2_pos, tree3_pos;
 
 Tree[] allTrees   = new Tree[3];
-Tank[] allTanks   = new Tank[6];
+Tank[] allTanks ;
 
 // Team0
 color team0Color;
 PVector team0_tank0_startpos;
 PVector team0_tank1_startpos;
 PVector team0_tank2_startpos;
-Tank tank0, tank1, tank2;  //<>// //<>// //<>// //<>// //<>// //<>//
+Tank tank0, tank1, tank2;  //<>// //<>// //<>// //<>//
 
 // Team1
 color team1Color;
@@ -56,12 +56,14 @@ World world;
 
 StopWatch sw;
 
-GeneralSearch GS = new GeneralSearch();
+GeneralSearch GS;
 
 Team red;
 Team blue;
 
 Builder builder = new Builder();
+
+float worldTimer = 0;
 
 //======================================
 void setup()
@@ -70,6 +72,8 @@ void setup()
   //set variables
   frameRate(60);
   size(800, 800);
+  allTanks = new Tank[6];
+  GS = new GeneralSearch();
 
   world = new World(width, height);
   sw = new StopWatch();
@@ -118,7 +122,7 @@ void setup()
   TankPic blueTank = new TankPic(this, 50, team0Color);
   blueTank.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
 
-  
+
   tank0 = new Tank("tank0", team0_tank0_startpos, tank_size, red, blue );
   tank1 = new Tank("tank1", team0_tank1_startpos, tank_size, red, blue );
   tank2 = new Tank("tank2", team0_tank2_startpos, tank_size, red, blue );
@@ -127,56 +131,65 @@ void setup()
   tank1.renderer(blueTank);
   tank2.renderer(blueTank);
 
+  allTanks[0] = tank0;
+  allTanks[1] = tank1;
+  allTanks[2] = tank2;
+
   world.add(tank0);
   world.add(tank1);
   world.add(tank2);
-  
-  
+
+
   TankPic redTank = new TankPic(this, 50, team1Color);
   redTank.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
-  
- tank3 = new Tank("tank3", team1_tank0_startpos, tank_size, blue, red);
- tank4 = new Tank("tank4", team1_tank1_startpos, tank_size, blue, red);
- tank5 = new Tank("tank5", team1_tank2_startpos, tank_size, blue, red);
+
+  tank3 = new Tank("tank3", team1_tank0_startpos, tank_size, blue, red);
+  tank4 = new Tank("tank4", team1_tank1_startpos, tank_size, blue, red);
+  tank5 = new Tank("tank5", team1_tank2_startpos, tank_size, blue, red);
 
   tank3.renderer(redTank);
   tank4.renderer(redTank);
   tank5.renderer(redTank);
-  
-    allTanks[3] = tank3;
+
+  allTanks[3] = tank3;
   allTanks[4] = tank4;
- allTanks[5] = tank5;
-  
-    world.add(tank3);
+  allTanks[5] = tank5;
+
+  world.add(tank3);
   world.add(tank4);
   world.add(tank5);
 
-
-
-
-
-  allTanks[0] = tank0;
-  // Symbol samma som index!
-
-  allTanks[1] = tank1;
-  allTanks[2] = tank2;
-
-
-  //allTanks[0].setPatrole();
-
+  red.nav.updateNavLayout(world, 0);
+  blue.nav.updateNavLayout(world, 0);
 
   sw.reset();
-  red.nav.updateNavLayout(world, 0);
-  blue.nav.updateNavLayout(world,0);
 }
 
 void draw()
 {
+
+
   noCursor();
+
   double elapsedtime = sw.getElapsedTime();
   world.update(elapsedtime);
   bm.update((float)elapsedtime);
   background(200);
+
+
+  worldTimer += (float)elapsedtime;
+  if (worldTimer >= 60*3) {
+    for (Tank t : allTanks) {
+      if (t == null) {
+        continue;
+      }
+
+      t.death();
+    }
+    setup();
+    worldTimer = 0;
+  }
+
 
   bm.draw();
   blue.display((float)elapsedtime);
@@ -361,6 +374,9 @@ void keyPressed() {
       break;
     case KeyEvent.VK_4:
       SearchOption = 103;
+      break;
+    case KeyEvent.VK_R:
+      worldTimer = 60*3;
       break;
     }
   }
