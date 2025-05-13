@@ -285,10 +285,12 @@ public class BeTank extends HighLevelAction {
     tasks4.addAll(Arrays.asList(new Idle()));
 
     //Idle
+    /*
     refinments.add(new Refinment(
-      state -> state.tank.hitPoints <= 1,
-      tasks4
-      ));
+     state -> state.tank.hitPoints <= 1,
+     tasks4
+     ));
+     */
 
     //TrafficHLA
     refinments.add(new Refinment(
@@ -530,10 +532,18 @@ public class ExploreHLA extends HighLevelAction {
   ExploreHLA() {
     taskName = "ExploreHLA";
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
-    tasks1.addAll(Arrays.asList( new ExploreMap() /*new ExploreRegion()*/));
+    tasks1.addAll(Arrays.asList( new ExploreMap()));
     refinments.add(new Refinment(
-      state -> true,
+      state -> state.rm.RegExProc >= 100.0f,
       tasks1
+      ));
+
+
+    ArrayList<BaseAction> tasks2 = new ArrayList<>();
+    tasks2.addAll(Arrays.asList(new ExploreRegion()));
+    refinments.add(new Refinment(
+      state -> state.rm.RegExProc < 100.0f,
+      tasks2
       ));
   }
 }
@@ -626,7 +636,6 @@ public class PickRegion extends Action {
       oldRegion.occupied = false;
       oldRegion.claimed = false;
     }
-
 
     RegionManager rm = tank.team.nav.rm;
     tank.tankState.regionToExplore = rm.getAvailibleRegion(new PVector((float)tank.pos().x, (float)tank.pos().y));
@@ -764,6 +773,15 @@ public class WalkAround extends Action {
 public class AttackHLA extends HighLevelAction {
   AttackHLA() {
     taskName = "AttackHLA";
+
+
+    ArrayList<BaseAction> tasks2 = new ArrayList<>();
+    tasks2.addAll(Arrays.asList(new Idle(), new Rotate(), new Shoot()));
+    refinments.add(new Refinment(
+      s -> s.tank.hitPoints <= 1,
+      tasks2
+      ));
+
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
     tasks1.addAll(Arrays.asList(new MoveToTarget(), new Rotate(), new Shoot()));
     refinments.add(new Refinment(
@@ -927,7 +945,7 @@ class Rotate extends Action {
     if (tank == null) {
       return;
     }
-    
+
     if (tank.tankState.astate.isAttacking) {
       tank.tankState.astate.isAligned = tank.turret.rotateTurret(tank.tankState.astate.enemyTarget.lastKnownPosition, deltaTime);
     } else {
@@ -960,16 +978,16 @@ class Shoot extends Action {
       state = execState.Success;
       return;
     }
-    
-    if(!tank.tankState.astate.isAligned){
+
+    if (!tank.tankState.astate.isAligned) {
       return;
     }
 
     PVector start = tank.position;
-    PVector end =  new PVector(tank.turret.forwardVector.x,tank.turret.forwardVector.y);
-    
+    PVector end =  new PVector(tank.turret.forwardVector.x, tank.turret.forwardVector.y);
+
     end = end.mult(300);
-    
+
     for (Tank t : tank.team.tanks) {
       if (t == null ||t == tank) {
         continue;

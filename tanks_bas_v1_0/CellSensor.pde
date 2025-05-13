@@ -95,7 +95,7 @@ class Sensor {
       PVector direction = VecMath.normalize(VecMath.direction(owner.position.x, owner.position.y, tank.position.x, tank.position.y));
       float angle = VecMath.dotAngle(direction, owner.turret.forwardVector);
       float dist = dist(owner.position.x, owner.position.y, tank.position.x, tank.position.y);
-      if (dist <= VIEWDISTANCE && angle >= 0 && !checkIfInWayOfView(owner, tank)) {
+      if ((dist <= VIEWDISTANCE && angle >= 0 && !checkIfInWayOfView(owner, tank))) {
         owner.tankState.isEnemyInRange  = true;
         owner.team.sendEnemySpotted(owner, tank);
       }
