@@ -127,7 +127,7 @@ class GeneralSearch {
         if (!nl.isValidIndex(neighbourIndex)) {
           continue;
         }
-        if (nl.cells[neighbourIndex].occupier != null && nl.cells[neighbourIndex].occupier != tank && nl.cells[neighbourIndex].multiOcc  ) {
+        if (nl.cells[neighbourIndex].occupier != tank && nl.cells[neighbourIndex].multiOcc  ) {
           continue;
         }
         //få position från cell
@@ -325,8 +325,8 @@ class GeneralSearch {
   }
 
   void draw() {
-    blendMode(REPLACE);
-    textSize(15);
+    //blendMode(REPLACE);
+    //textSize(15);
     if (!hasPath) {
       return;
     }

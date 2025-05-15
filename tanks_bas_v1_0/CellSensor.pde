@@ -35,6 +35,10 @@ class Sensor {
     }
   }
 
+  void clear() {
+    possibleCollisions.clear();
+  }
+
 
   void checkFront() {
     int parentIndex = owner.team.nav.getCellPosition((float)owner.pos().x, (float)owner.pos().y);
@@ -77,7 +81,9 @@ class Sensor {
 
     for (Integer index : keySet) {
       BaseEntity base =World.allEntities.get(index);
-      if(base instanceof Tank){continue;}
+      if (base instanceof Tank) {
+        continue;
+      }
       if (CollisionChecker.lineCircle(tank.position.x, tank.position.y, other.position.x, other.position.y, (float)base.pos().x, (float)base.pos().y, (float)base.colRadius())) {
         return true;
       }

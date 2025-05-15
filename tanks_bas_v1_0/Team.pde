@@ -60,8 +60,7 @@ class TrafficManager {
     if (tanks.containsKey(tank)) {
       //System.out.println("ALREADY CONTAINS");
       updateTrafficTank(tank);
-    } 
-    else {
+    } else {
       tank.tankState.tstate.isInTraffic = true;
       tanks.put(tank, new TrafficTank(tank));
       updateTrafficTank(tank);
@@ -71,7 +70,6 @@ class TrafficManager {
   }
 
   void leaveTraffic(Tank tank) {
-    TrafficTank trafficTank = tanks.get(tank);
     tanks.remove(tank);
     tank.tankState.tstate.isInTraffic = false;
     tank.tankState.tstate.hasPriority = false;
@@ -85,15 +83,15 @@ class TrafficManager {
     Set<Tank> keySet = tanks.keySet();
     TrafficTank trafficTank = tanks.get(tank);
 
-    if (tank.tankState.tstate.isObscured || tank.tankState.hitPoints == 2) {
+    if (tank.tankState.tstate.isObscured || tank.tankState.hitPoints == 2 || tank.tankState.hitPoints > 1) {
       trafficTank.facingTank = 0;
       trafficTank.crossingTank = 0;
       return;
     }
 
     for (Tank t : keySet) {
-      trafficTank.facingTank = isFacingTank(tank, t);
-      trafficTank.crossingTank = isCrossingTank(tank, t);
+      trafficTank.facingTank += isFacingTank(tank, t);
+      trafficTank.crossingTank += isCrossingTank(tank, t);
     }
   }
 
@@ -143,7 +141,7 @@ class TrafficManager {
   }
 
   void draw() {
-
+    pushStyle();
     Tank mainTank = currentPriorityTank;
     if (mainTank == null) {
       return;
@@ -152,6 +150,11 @@ class TrafficManager {
       strokeWeight(5);
       line(t.position.x, t.position.y, mainTank.position.x, mainTank.position.y);
     }
+    popStyle();
+  }
+
+  void clear() {
+    tanks.clear();
   }
 }
 
@@ -172,7 +175,9 @@ public class EnemyTank {
   }
 
   EnemyTank(EnemyTank et, Tank tank) {
-    if(et == null){return;}
+    if (et == null) {
+      return;
+    }
     this.lastKnownPosition = et.lastKnownPosition;
     this.hitPoints = et.hitPoints;
     this.focusCount = et.focusCount;
@@ -215,86 +220,80 @@ class Team {
 
   int size = 0;
 
+  StatsWindowManager swm;
+
   Team(color teamColor, PVector pos, Teams team) {
+    System.out.println("*** Team " + team);
     this.position = pos;
     this.teamColor = teamColor;
     this.team = team;
     WorldState = new HTNState(this);
+    swm = new StatsWindowManager(80, 60, new PVector(10, 10));
+  }
+
+  Team(color teamColor, PVector pos, Teams team, NavLayout nav) {
+    System.out.println("*** Team " + team);
+    this.position = pos;
+    this.teamColor = teamColor;
+    this.team = team;
+    this.nav = nav;
+    WorldState = new HTNState(this);
+    swm = new StatsWindowManager(90, 60, new PVector(40, height - 60));
   }
 
   int addTank(Tank t) {
     tanks[size] = t;
+    swm.add(new StatsWindow(t));
     return size++;
   }
-  /*
-  public void getTrafficPrio(int id, int otherID) {
-   
-   if (id < 0 ||otherID < 0) {
-   return;
-   }
-   
-   Tank tank = tanks[id];
-   
-   if (tm.tanks.peek() == tank) {
-   tank.tankState.tstate.priority = 0;
-   } else {
-   tank.tankState.tstate.priority = 1;
-   }
-   
-   
-   
-   
-   int prio= tank.tankState.tstate.priority;
-   int otherPrio = other.tankState.tstate.priority;
-   if(prio < 0 && otherPrio == 0){
-   tank.tankState.tstate.priority = 1;
-   return;
-   }
-   if(prio < 0 && otherPrio < 0){
-   tank.tankState.tstate.priority = 0;
-   other.tankState.tstate.priority = 1;
-   return;
-   }
-   tank.tankState.tstate.priority = 0;
-   other.tankState.tstate.priority = 1;
-   
-   }
-   
-   
-   public void sendForcedTrafficPrio(int id, int otherID, int selfPrio, int otherPrio) {
-   tanks[id].tankState.tstate.priority = selfPrio;
-   tanks[otherID].tankState.tstate.priority = otherPrio;
-   }
-   */
-   
-  void sendEnemyKilled(int id){
+
+  void sendEnemyKilled(int id) {
     EnemyTank et = WorldState.enemyTanks[id];
-    if(et == null){return;}
-    for(Tank t: tanks){
-      if(t == null || t.tankState.astate.enemyTarget == null){continue;}
-      if(t.tankState.astate.enemyTarget.id == et.id){
+    if (et == null) {
+      return;
+    }
+    for (Tank t : tanks) {
+      if (t == null || t.tankState.astate.enemyTarget == null) {
+        continue;
+      }
+      if (t.tankState.astate.enemyTarget.id == et.id) {
         et.removeAsTarget(t);
       }
     }
     WorldState.enemyTanks[et.id] = null;
   }
 
+
+  void removeFromTraffic(Tank tank) {
+    tm.leaveTraffic(tank);
+  }
+
   void sendEnemySpotted(Tank sender, Tank spotted) {
-    if(spotted.tankState.isDead){
+    if (spotted.tankState.isDead) {
       return;
     }
     WorldState.enemyTanks[spotted.ID] = new EnemyTank(spotted.ID, spotted.tankState.hitPoints, spotted.position);
     EnemyTank et = WorldState.enemyTanks[spotted.ID];
-    
+
+
+
+    if (sender == null) {
+      return;
+    }
+
+    et.addAsTarget(sender);
     Tank mostFittingTank = null;
     float currentMinDist = Integer.MAX_VALUE;
+
     for (Tank t : tanks) {
-      if(t == null){continue;}
+      if (t == null || t == sender) {
+        continue;
+      }
       float value = t.bid(sender, et);
       if (value == Integer.MIN_VALUE) {
         et.addAsTarget(t);
       }
-      if (value < currentMinDist && t != sender) {
+      if (value < currentMinDist) {
         currentMinDist = value;
         mostFittingTank = t;
       }
@@ -305,14 +304,6 @@ class Team {
   }
 
 
-
-  Team(color teamColor, PVector pos, Teams team, NavLayout nav) {
-    this.position = pos;
-    this.teamColor = teamColor;
-    this.team = team;
-    this.nav = nav;
-    WorldState = new HTNState(this);
-  }
 
   public boolean checkBoundry(PVector other) {
 
@@ -372,5 +363,111 @@ class Team {
     nav.updateNavLayout(world, deltaTime);
     displayHomeBase();
     tm.draw();
+    //swm.displayWindows();
+  }
+
+
+  void tankKilled(Tank tank) {
+    tanks[tank.ID] = null;
+    size--;
+    if (size <= 0) {
+      resetWorld();
+    }
+  }
+
+
+  void teamReset() {
+    for (Tank t : tanks) {
+      if (t == null) {
+        continue;
+      }
+
+      t.clear();
+      t = null;
+    }
+    swm.clear();
+    tm.clear();
+  }
+}
+
+public class StatsWindowManager {
+
+  PVector position;
+
+  ArrayList<StatsWindow> windows = new ArrayList<>();
+
+  float mwidth;
+  float mheight;
+
+  StatsWindowManager(float mwidth, float mheight, PVector position) {
+    this.mwidth = mwidth;
+    this.mheight = mheight;
+    this.position = position;
+  }
+
+  void add(StatsWindow sw) {
+    sw.offset = windows.size() * mwidth * 1.2;
+    windows.add(sw);
+  }
+
+
+  void displayWindows() {
+
+
+    push();
+
+
+    translate(position.x, position.y);
+
+    textAlign(LEFT);
+    for (StatsWindow sw : windows) {
+      sw.display(mwidth, mheight);
+    }
+
+    pop();
+  }
+
+  void clear() {
+    windows.clear();
+  }
+}
+
+public class StatsWindow {
+
+  float offset;
+
+  Tank owner;
+
+  StatsWindow(Tank owner) {
+    this.owner = owner;
+  }
+
+  void display(float mwidth, float mheight) {
+    if (owner == null) {
+      return;
+    }
+
+    float newOffset = offset + 10;
+
+    TankState tankState = owner.tankState;
+    EnemyTank et = tankState.astate.enemyTarget;
+    fill(#F0EBEB);
+    rect(offset, 0, mwidth, mheight, 10);
+
+
+    textSize(10);
+    fill(#E53131);
+    text("ID: " + owner.ID, newOffset, 20);
+    text("PosX "+ round(owner.position.x) + " PosY " + round(owner.position.y), newOffset, 30);
+    text("HitPoints: " + owner.tankState.hitPoints, newOffset, 40);
+    if (et == null) {
+      text("Target: null", newOffset, 50);
+    } else {
+      text("Target: " + et.id, newOffset, 50);
+    }
+    if (owner.runner != null) {
+      text("Tasks: " + owner.runner.toString(), newOffset, 60);
+      
+    }
   }
 }

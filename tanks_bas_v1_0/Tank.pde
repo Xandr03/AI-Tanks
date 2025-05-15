@@ -113,6 +113,8 @@ public class TankState {
   boolean isFriendlyClose = false;
   boolean hasRegion = false;
 
+  boolean isSearchingRegion = false;
+
   boolean isBackingUp = false;
 
   boolean isShouldWait = false;
@@ -181,6 +183,7 @@ public class TankState {
     this.isWaiting = state.isWaiting;
     this.destination = state.destination;
     this.isIdle = state.isIdle;
+    this.isSearchingRegion = state.isSearchingRegion;
   }
 }
 
@@ -242,7 +245,7 @@ class Tank extends Vehicle {
 
   //======================================
   Tank(String _name, PVector _startpos, float _size, Team team, Team oposition ) {
-    super(new Vector2D(_startpos.x, _startpos.y), 25, new Vector2D(0, 0), 30, new Vector2D(0, 1), 1, 5, 100);
+    super(new Vector2D(_startpos.x, _startpos.y), 25, new Vector2D(0, 0), 30, new Vector2D(0, 1), 1, 1, 100);
     println("*** Tank.Tank()");
     this.name         = _name;
     this.diameter     = _size;
@@ -262,9 +265,6 @@ class Tank extends Vehicle {
 
     Domain tankDomain = new Domain(25, 25, 775, 775);
     this.worldDomain(tankDomain, SBF.REBOUND);
-    // this.addFSM();
-    //this.FSM().setGlobalState(tankGlobalState);
-    // this.FSM().changeState(idle);
     turret = new Turret(this, new PVector(0, 1));
     sensor = new Sensor(this, 2, 1);
     this.path.owner = this;
@@ -273,11 +273,16 @@ class Tank extends Vehicle {
     runner = new Plan_runner(this);
     tankState.tankPosition = _startpos;
     this.ID = team.addTank(this);
+    this.AP().pathOn();
   }
 
   public void report() {
     team.report(reportCells);
     reportCells = new ArrayList<Cell>();
+  }
+  
+  void clear(){
+    sensor.clear();
   }
 
 
@@ -331,22 +336,6 @@ class Tank extends Vehicle {
     }
   }
 
-  void replan(Tank sender) {
-  }
-
-  void checkTankFrontObscured() {
-  }
-
-  void checkTankBackObscured() {
-  }
-
-  void checkTankLeftObscured() {
-  }
-
-  void checkTankRightObscured() {
-  }
-
-
   boolean RotateToDest() {
     if (this.tankState.destination == null) {
       return false;
@@ -369,15 +358,12 @@ class Tank extends Vehicle {
   }
 
   public float bid(Tank tank, EnemyTank et) {
-    if (tank.tankState.hitPoints <= 1) {
+    float dist =  dist(this.position.x, this.position.y, et.lastKnownPosition.x, et.lastKnownPosition.y);
+    if (tank.tankState.hitPoints <= 1 && dist < tank.tankState.astate.enemyTarget.dist + 45) {
       return Integer.MIN_VALUE;
     }
-    if (et.focusCount >= 2) {
-      return Integer.MAX_VALUE;
-    }
     //Return max tank has max value
-    float dist =  dist(this.position.x, this.position.y, et.lastKnownPosition.x, et.lastKnownPosition.y);
-    if (tank.tankState.astate.enemyTarget != null && tank.tankState.astate.enemyTarget.dist < dist) {
+    if (tank.tankState.astate.enemyTarget != null && tank.tankState.astate.enemyTarget.dist < dist && et.id != tank.tankState.astate.enemyTarget.id) {
       return Integer.MAX_VALUE;
     }
     return dist;
@@ -462,31 +448,6 @@ class Tank extends Vehicle {
     wait((float)deltaTime);
     reload((float)deltaTime);
 
-    /*
-    for (MovingEntity m : world.getMovers(this)) {
-     if (m == this) {
-     
-     continue;
-     }
-     if (m instanceof Tank) {
-     
-     Tank v = (Tank)m;
-     
-     PVector direction = VecMath.direction((float)this.pos().x, (float)this.pos().y, (float)m.pos().x, (float)m.pos().y);
-     float angle = VecMath.dotAngle(new PVector((float)this.heading().x, (float)this.heading().y), VecMath.normalize(direction));
-     float dist = dist((float)this.pos().x, (float)this.pos().y, (float)m.pos().x, (float)m.pos().y);
-     State otherState = v.FSM().getCurrentState();
-     if (dist <= 60 && angle > 0) {
-     if(otherState instanceof TankBreakAndWait && ((TankBreakAndWait)otherState).other == this) {
-     this.FSM().changeState(tankPatroleState);
-     continue;
-     }
-     this.FSM().changeState(new TankBreakAndWait(v));
-     }
-     }
-     }
-     */
-
     if (this.AP().pathRouteLength() <= 0) {
       tankState.isNavigation = false;
     }
@@ -498,20 +459,28 @@ class Tank extends Vehicle {
       runner.sequence = null;
       this.runner = null;
     }
+
     this.tankState.isDead = true;
-    this.team.tanks[ID] = null;
+    this.team.tankKilled(this);
     world.death(this, 0);
   }
 
   void doDamage(Tank damager) {
+    if (damager.team == this.team) {
+      return;
+    }
     this.tankState.hitPoints -=1;
+    if (tankState.hitPoints == 1) {
+      this.AP().pathRoute().clear();
+      this.AP().pathOff();
+      this.velocity(0, 0);
+      this.team.removeFromTraffic(this);
+    }
     if (tankState.hitPoints <= 0) {
       damager.team.sendEnemyKilled(this.ID);
       this.death();
     }
-    if (damager.team == this.team) {
-      return;
-    }
+
     team.sendEnemySpotted(this, damager);
   }
 
@@ -637,7 +606,7 @@ public class Turret {
   boolean rotateTurret(PVector destination, float deltaTime) {
     PVector direction = VecMath.normalize(VecMath.direction(owner.position.x, owner.position.y, destination.x, destination.y));
     float crossProduct = forwardVector.x * direction.y - forwardVector.y * direction.x;
-    
+
     if (dist(direction.x, direction.y, forwardVector.x, forwardVector.y) <= 0.1) {
       return true;
     }
@@ -660,7 +629,7 @@ public class Turret {
 
       forwardVector = x.add(y);
     }
-    return true;
+    return false;
     //PVector direction = VecMath.normalize(VecMath.direction(owner.position.x, owner.position.y, destination.x, destination.y));
     //forwardVector = forwardVector.lerp(direction, radians(3) * deltaTime).normalize();
   }
@@ -696,7 +665,8 @@ public class TankPic extends PicturePS {
       Hints.draw(app, user, velX, velY, headX, headY);
     }
     // Determine the angle the tank is heading
-    float angle = PApplet.atan2(t.turret.forwardVector.y, t.turret.forwardVector.x);
+    float turretangle = PApplet.atan2(t.turret.forwardVector.y, t.turret.forwardVector.x);
+    float bodyAngle = PApplet.atan2(headY, headX);
 
 
 
@@ -704,37 +674,15 @@ public class TankPic extends PicturePS {
     pushMatrix();
 
 
+    
 
     fill(base);
     strokeWeight(1);
-    if (t != null && t.runner != null) {
-      BaseAction action = t.runner.runningTask;
-
-      textSize(10);
-      fill(#FF0000);
-
-      text("ID: "+ t.ID, posX, posY + 60);
-      text("ClosestDist: " + t.tankState.tstate.closestDist, posX, posY + 70);
-      //text("isStopped: "+ t.tankState.isStopped, posX, posY +80);
-      // text("isWaiting: " + t.tankState.isWaiting, posX, posY + 90);
-      //text("hasPriority: " + t.tankState.tstate.hasPriority, posX, posY + 100);
-      text("isAttacking: " + t.tankState.astate.isAttacking, posX, posY + 80);
-      if (t.team.tm.tanks.containsKey(t)) {
-        text("isInTraffic: "+ t.team.tm.tanks.get(t).facingTank, posX, posY + 110);
-        text("isInTraffic: "+ t.team.tm.tanks.get(t).crossingTank, posX, posY + 120);
-      }
-    }
-
-
-    for (GraphNode gp : t.AP().pathRoute()) {
-      Vector2D point = new Vector2D(gp.x(), gp.y());
-      fill(color(0, 255, 0), 100);
-      circle((float)point.x, (float)point.y, 10);
-    }
-
     translate(posX, posY);
 
     imageMode(CENTER);
+
+    rotate(bodyAngle);
 
     fill(base, 100);
     ellipse(0, 0, size, size);
@@ -744,18 +692,37 @@ public class TankPic extends PicturePS {
 
 
 
-
     //kanontornet
+
+
+
+
+
+    float procentage = t.tankState.hitPoints/3.0f;
+
+    strokeWeight(1);
+    fill(base, 255);
     ellipse(0, 0, size/2, size/2);
 
-
-    rotate(angle);
+    rotate(-bodyAngle);
+    rotate(turretangle);
     strokeWeight(3);
     float cannon_length = size/1.5;
     line(0, 0, cannon_length, 0);
+    strokeWeight(1);
+    rotate(-turretangle);
+    fill(#B7B5B5, 255);
+    rect(-size/2, -40, 50, 5);
+
+    fill(#F53B3B, 255);
+    rect(-size/2, -40, 50*procentage, 5);
+
+    textSize(20);
+    fill(#000000, 255);
+    textAlign(CENTER);
+    text(t.ID, 0, -45);
 
     imageMode(CORNER);
-
 
 
 
@@ -768,5 +735,7 @@ public class TankPic extends PicturePS {
 
     popMatrix();
     popStyle();
+    
+
   }
 }

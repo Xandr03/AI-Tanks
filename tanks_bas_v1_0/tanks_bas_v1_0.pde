@@ -1,4 +1,4 @@
-//Alexander Bakas alba5453 //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
+//Alexander Bakas alba5453 //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
 
 
 import game2dai.entities.*;
@@ -14,18 +14,14 @@ import java.util.*;
 import java.awt.event.KeyEvent;
 import java.util.function.*;
 
-
-// Implement priority in Traffic, or a manager, that checks and decides who can drive ahead
-// with potenitellt contract net protocol
-//TODO fix a search algorithm that can take a direction and walk the tank back ward for example, so it dosent collide with trees and stop at the closest position that is availible
-
 int SearchOption = 100;
 
 boolean left, right, up, down;
 boolean mouse_pressed;
 
+Teams teamToDisplay = Teams.red;
 
-BulletManager bm = new BulletManager();
+BulletManager bm;
 
 PImage tree_img;
 PVector tree1_pos, tree2_pos, tree3_pos;
@@ -38,7 +34,7 @@ color team0Color;
 PVector team0_tank0_startpos;
 PVector team0_tank1_startpos;
 PVector team0_tank2_startpos;
-Tank tank0, tank1, tank2;  //<>// //<>// //<>// //<>//
+Tank tank0, tank1, tank2;  //<>// //<>// //<>//
 
 // Team1
 color team1Color;
@@ -61,24 +57,32 @@ GeneralSearch GS;
 Team red;
 Team blue;
 
-Builder builder = new Builder();
+Builder builder;
 
 float worldTimer = 0;
 
 //======================================
+
+
+
+
+
 void setup()
 {
 
   //set variables
   frameRate(60);
   size(800, 800);
-  allTanks = new Tank[6];
-  GS = new GeneralSearch();
+
 
   world = new World(width, height);
   sw = new StopWatch();
   blue  = new Team(#004AFF, new PVector(width - 151, height - 351), Teams.blue, new NavLayout(775, 775, 25, 25, 25));
   red = new Team(#F22020, new PVector(0, 0), Teams.red, new NavLayout(775, 775, 25, 25, 25));
+  builder = new Builder();
+  allTanks = new Tank[6];
+  GS = new GeneralSearch();
+  bm = new BulletManager();
   up             = false;
   down           = false;
   mouse_pressed  = false;
@@ -102,7 +106,6 @@ void setup()
   allTrees[1].renderer(treeImage);
   allTrees[2].renderer(treeImage);
 
-  System.out.println(tan(radians(90)));
   tank_size = 50;
 
   // Team0
@@ -186,16 +189,14 @@ void draw()
 
       t.death();
     }
-    setup();
+    reset();
     worldTimer = 0;
   }
 
 
-  bm.draw();
-  blue.display((float)elapsedtime);
-  red.display((float)elapsedtime);
 
-  red.nav.draw();
+
+
   //blue.nav.draw();
 
 
@@ -216,11 +217,129 @@ void draw()
   //displayHomeBase();
   displayAlgorithmOption();
 
-  //displayGUI();
+  if (teamToDisplay == Teams.red) {
+    red.nav.draw();
+  } else {
+    blue.nav.draw();
+  }
 
-
-  world.draw(elapsedtime);
   GS.draw();
+
+  bm.draw();
+
+  blue.display((float)elapsedtime);
+
+  red.display((float)elapsedtime);
+  world.draw(elapsedtime);
+
+  if (teamToDisplay == Teams.red) {
+    red.swm.displayWindows();
+  } else {
+    blue.swm.displayWindows();
+  }
+
+  //displayGUI();
+}
+
+public void resetWorld(){
+  worldTimer = Integer.MAX_VALUE;
+}
+
+private void reset() {
+
+  world.allEntities.clear();
+
+  bm.clear();
+
+  red.teamReset();
+  blue.teamReset();
+
+  world = new World(width, height);
+  sw = new StopWatch();
+  blue  = new Team(#004AFF, new PVector(width - 151, height - 351), Teams.blue, new NavLayout(775, 775, 25, 25, 25));
+  red = new Team(#F22020, new PVector(0, 0), Teams.red, new NavLayout(775, 775, 25, 25, 25));
+  builder = new Builder();
+  allTanks = new Tank[6];
+  GS = new GeneralSearch();
+  bm = new BulletManager();
+
+
+  // Trad
+  allTrees[0] = new Tree(230, 600);
+  allTrees[1] = new Tree(280, 230);
+  allTrees[2] = new Tree(530, 520);
+
+  world.add(allTrees[0]);
+  world.add(allTrees[1]);
+  world.add(allTrees[2]);
+
+  BitmapPic treeImage = new BitmapPic(this, "tree01_v2.png");
+
+  allTrees[0].renderer(treeImage);
+  allTrees[1].renderer(treeImage);
+  allTrees[2].renderer(treeImage);
+
+  tank_size = 50;
+
+  // Team0
+  team0Color  = color(204, 50, 50);             // Base Team 0(red)
+  team0_tank0_startpos  = new PVector(50, 50);
+  team0_tank1_startpos  = new PVector(50, 150);
+  team0_tank2_startpos  = new PVector(50, 250);
+
+  // Team1
+  team1Color  = color(0, 150, 200);             // Base Team 1(blue)
+  team1_tank0_startpos  = new PVector(width-50, height-250);
+  team1_tank1_startpos  = new PVector(width-50, height-150);
+  team1_tank2_startpos  = new PVector(width-50, height-50);
+
+  // What does this mover look like
+
+  TankPic blueTank = new TankPic(this, 50, team0Color);
+  blueTank.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
+
+
+  tank0 = new Tank("tank0", team0_tank0_startpos, tank_size, red, blue );
+  tank1 = new Tank("tank1", team0_tank1_startpos, tank_size, red, blue );
+  tank2 = new Tank("tank2", team0_tank2_startpos, tank_size, red, blue );
+
+  tank0.renderer(blueTank);
+  tank1.renderer(blueTank);
+  tank2.renderer(blueTank);
+
+  allTanks[0] = tank0;
+  allTanks[1] = tank1;
+  allTanks[2] = tank2;
+
+  world.add(tank0);
+  world.add(tank1);
+  world.add(tank2);
+
+
+  TankPic redTank = new TankPic(this, 50, team1Color);
+  redTank.showHints(Hints.HINT_COLLISION | Hints.HINT_HEADING | Hints.HINT_VELOCITY);
+
+  tank3 = new Tank("tank3", team1_tank0_startpos, tank_size, blue, red);
+  tank4 = new Tank("tank4", team1_tank1_startpos, tank_size, blue, red);
+  tank5 = new Tank("tank5", team1_tank2_startpos, tank_size, blue, red);
+
+  tank3.renderer(redTank);
+  tank4.renderer(redTank);
+  tank5.renderer(redTank);
+
+  allTanks[3] = tank3;
+  allTanks[4] = tank4;
+  allTanks[5] = tank5;
+
+  world.add(tank3);
+  world.add(tank4);
+  world.add(tank5);
+
+  red.nav.updateNavLayout(world, 0);
+  blue.nav.updateNavLayout(world, 0);
+
+  worldTimer = 0;
+  sw.reset();
 }
 
 void displayAlgorithmOption() {
@@ -376,7 +495,13 @@ void keyPressed() {
       SearchOption = 103;
       break;
     case KeyEvent.VK_R:
-      worldTimer = 60*3;
+      teamToDisplay = Teams.red;
+      break;
+    case KeyEvent.VK_B:
+      teamToDisplay = Teams.blue;
+      break;
+    case KeyEvent.VK_Q:
+      reset();
       break;
     }
   }

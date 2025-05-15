@@ -43,7 +43,6 @@ Planner planner = new Planner();
 public class HTNState {
 
   TankState tank = new TankState();
-  Team team;
   boolean IsWorldPeacefull = true;
   int enemiesLeft = 3;
   RegionManager rm;
@@ -54,7 +53,6 @@ public class HTNState {
 
 
   HTNState(Team team) {
-    this.team = team;
     this.rm = team.nav.rm;
   }
 
@@ -91,21 +89,14 @@ public class Plan_runner {
 
   LinkedList<Action> sequence = new LinkedList<>();
 
-  boolean isDone = true;
-
-
-  Plan_runner secondaryPlanner; //For Handling Breaking and yielding
-
   Action runningTask;
 
   Tank owner;
+
   Plan_runner(Tank tank) {
     this.owner = tank;
   }
 
-  boolean hasTask() {
-    return !sequence.isEmpty();
-  }
 
   void update(float deltaTime) {
     //System.out.println("update");
@@ -138,22 +129,16 @@ public class Plan_runner {
 
   public String toString() {
     StringBuilder sb = new StringBuilder();
-
-    if (sequence.isEmpty()) {
-      sb.append("  (No tasks in sequence)\n");
-    } else {
-      int index = 0;
-      for (Action action : sequence) {
-        sb.append("  [").append(action.taskName);
-        sb.append("] ");
-      }
+    for (Action action : sequence) {
+      sb.append("  [").append(action.taskName).append("] ");
     }
-
     return sb.toString();
   }
 }
 
+
 public class Planner {
+
 
   public LinkedList<Action> Search(HighLevelAction problem, HTNState state) {
     HTNState initialState = state;
@@ -161,8 +146,6 @@ public class Planner {
 
     frontier.addAll(problem.getRefinments(state));
 
-    //Multiple solutions
-    //ArrayList<Plan> solutions = new ArrayList<>();
 
     LinkedList<Action> prefix = new LinkedList<>();
 
@@ -175,7 +158,6 @@ public class Planner {
         hla = (HighLevelAction)plan;
       }
 
-      //HTNState outcome = getPotentialState(initialState, prefix);
       if (hla == null) {
         Action a = (Action)plan;
         if (a.preCondition(initialState)) {
@@ -193,18 +175,8 @@ public class Planner {
   ArrayList<BaseAction> refine(HighLevelAction hla, HTNState state) {
     return hla.getRefinments(state);
   }
-
-
-  HTNState getPotentialState(HTNState initialState, LinkedList<Action> actions) {
-
-    HTNState newState = initialState;
-    for (Action act : actions) {
-      newState = act.effect(newState);
-    }
-    return newState;
-  }
 }
-public class BaseAction { //Operator
+public class BaseAction {
   String taskName = "NO NAME";
 }
 
@@ -276,32 +248,22 @@ public class BeTank extends HighLevelAction {
     tasks1.addAll(Arrays.asList(new AttackHLA()));
 
     ArrayList<BaseAction> tasks2 = new ArrayList<>();
-    tasks2.addAll(Arrays.asList(new Rotate(), new ExploreHLA()));
+    tasks2.addAll(Arrays.asList(new ExploreHLA()));
 
     ArrayList<BaseAction> tasks3 = new ArrayList<>();
-    tasks3.addAll(Arrays.asList(new Rotate(), new TrafficHLA()));
+    tasks3.addAll(Arrays.asList(new TrafficHLA()));
 
-    ArrayList<BaseAction> tasks4 = new ArrayList<>();
-    tasks4.addAll(Arrays.asList(new Idle()));
-
-    //Idle
-    /*
-    refinments.add(new Refinment(
-     state -> state.tank.hitPoints <= 1,
-     tasks4
-     ));
-     */
 
     //TrafficHLA
     refinments.add(new Refinment(
-      s -> s.tank.tstate.isInTraffic == true && s.tank.isIdle == false,
+      s -> s.tank.tstate.isInTraffic == true && s.tank.hitPoints > 1,
       tasks3
       ));
 
     //ExploreHLA
     refinments.add(new Refinment(
       s -> (s.tank.tstate.isInTraffic == false || s.tank.tstate.hasPriority == true) &&
-      s.tank.astate.isAttacking == false && s.tank.isIdle == false && s.tank.tstate.cantGo == false,
+      s.tank.astate.isAttacking == false && s.tank.hitPoints > 1 && s.tank.tstate.cantGo == false,
 
       tasks2
       ));
@@ -343,14 +305,16 @@ public class CheckTraffic extends HighLevelAction {
     tasks4.addAll(Arrays.asList(new RePlanRoute()));
 
 
+
+    //Replan route
     refinments.add(new Refinment(
-      s -> s.tank.tstate.cantGo && s.tank.tstate.hasPriority,
+      s -> s.tank.tstate.cantGo && s.tank.tstate.hasPriority && s.tank.hitPoints > 1,
       tasks4
       ));
 
     //BackUp
     refinments.add(new Refinment(
-      s -> s.tank.isFriendlyClose && s.tank.tstate.closestDist <= MAXMOVEAWAYDISTANCE && s.tank.tstate.hasPriority == false,
+      s -> s.tank.isFriendlyClose && s.tank.tstate.closestDist <= MAXMOVEAWAYDISTANCE && s.tank.tstate.hasPriority == false && s.tank.hitPoints > 1,
       tasks3
       ));
 
@@ -368,6 +332,8 @@ public class RePlanRoute extends Action {
     taskName = "RePlanRoute";
   }
 
+
+
   public boolean preCondition(HTNState s) {
     return true;
   }
@@ -378,9 +344,11 @@ public class RePlanRoute extends Action {
 
   public void execute(Tank tank, float deltaTime) {
     System.out.println("--------------REPLAN---------------");
+
     if (GS.computePath(tank, tank.tankState.destination, tank.team.nav, GeneralSearch.ASTAR)) {
       tank.AP().pathSetRoute(GS.path);
     }
+
     state = execState.Success;
   }
 }
@@ -391,7 +359,6 @@ public class BackUp extends Action {
   BackUp() {
     taskName = "BackUp";
   }
-
   public boolean preCondition(HTNState s) {
     return true;
   }
@@ -405,6 +372,8 @@ public class BackUp extends Action {
 
     tank.tankState.tstate.isInTraffic = true;
 
+
+
     for (TankData other : tank.tankState.tstate.otherTanks) {
 
       if (other.tank.tankState.tstate.hasPriority) {
@@ -413,7 +382,7 @@ public class BackUp extends Action {
         tank.AP().pathRoute().clear();
         Vector2D potentialDest = tank.getGoodDirection(other.pos);
         if (tank.tankState.tstate.isObscured) {
-          other.tank.replan(tank);
+          // other.tank.replan(tank);
         }
         tank.AP().pathAddToRoute(new Vector2D[]{potentialDest});
         tank.tankState.isBackingUp = true;
@@ -568,7 +537,7 @@ public class ExploreRegion extends HighLevelAction {
     //System.out.println("*** ExploreRegion");
     taskName = "ExploreRegion";
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
-    tasks1.addAll(Arrays.asList(new PickRegion(), new MoveToRegion(), new SearchRegion()));
+    tasks1.addAll(Arrays.asList(new PickRegion(), new Rotate(), new MoveToRegion(), new SearchRegion()));
 
     ArrayList<BaseAction> tasks2 = new ArrayList<>();
     tasks2.addAll(Arrays.asList(new PickRegion(), new RotateToRegion()));
@@ -646,6 +615,7 @@ public class PickRegion extends Action {
     tank.tankState.regionState = rm.regions[tank.tankState.regionToExplore];
     rm.setRegionClaimed(tank.tankState.regionToExplore, true);
     tank.tankState.regionDes = GridRegion.values()[tank.tankState.regionToExplore];
+    tank.tankState.isSearchingRegion = false;
     state = execState.Success;
   }
 }
@@ -690,7 +660,7 @@ public class SearchRegion extends HighLevelAction {
     taskName = "SearchRegion";
     //System.out.println("*** SearchRegion");
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
-    tasks1.addAll(Arrays.asList(new MoveInRegion()));
+    tasks1.addAll(Arrays.asList(new Rotate(), new MoveInRegion()));
     refinments.add(new Refinment(
       s -> s.tank.regionCur != GridRegion.INV &&  s.tank.regionDes != GridRegion.INV && s.tank.regionCur == s.tank.regionDes,
       tasks1));
@@ -717,6 +687,7 @@ public class MoveInRegion extends Action {
 
   public void execute(Tank tank, float deltaTime) {
     //System.out.println("MoveInRegion Cur: "+ tank.tankState.regionCur +" Des: " + tank.tankState.regionDes);
+    tank.tankState.isSearchingRegion = true;
     tank.AP().pathOn();
     tank.tankState.regionState.occupied = true;
     if (tank.AP().pathRouteLength() <= 0) {
@@ -776,7 +747,7 @@ public class AttackHLA extends HighLevelAction {
 
 
     ArrayList<BaseAction> tasks2 = new ArrayList<>();
-    tasks2.addAll(Arrays.asList(new Idle(), new Rotate(), new Shoot()));
+    tasks2.addAll(Arrays.asList(new Rotate(), new Shoot()));
     refinments.add(new Refinment(
       s -> s.tank.hitPoints <= 1,
       tasks2
@@ -785,7 +756,7 @@ public class AttackHLA extends HighLevelAction {
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
     tasks1.addAll(Arrays.asList(new MoveToTarget(), new Rotate(), new Shoot()));
     refinments.add(new Refinment(
-      s -> true,
+      s -> s.tank.hitPoints > 1,
       tasks1
       ));
   }
@@ -802,14 +773,14 @@ public class MoveToTarget extends HighLevelAction {
 
     //Refinement 1
     refinments.add(new Refinment(
-      s -> true,
+      s -> s.tank.hitPoints >= 3,
       tasks1
       ));
 
 
     //Refinemnt 2
     refinments.add(new Refinment(
-      s -> s.tank.hitPoints < 3,
+      s -> s.tank.hitPoints < 3 && s.tank.hitPoints > 1,
       tasks2
       ));
   }
@@ -858,7 +829,7 @@ public class MoveAtDistance extends HighLevelAction {
       ));
 
     refinments.add(new Refinment(
-      s -> s.tank.astate.enemyTarget.dist <= LONGFIRERANGE,
+      s -> s.tank.astate.enemyTarget.dist <= LONGFIRERANGE - 30,
       tasks2
       ));
   }
@@ -878,7 +849,7 @@ public class MoveAwayFromEnemy extends Action {
   }
 
   void execute(Tank tank, float deltaTime) {
-    if (tank == null) {
+    if (tank == null || tank.tankState.hitPoints <= 1) {
       state = execState.Success;
       return;
     }
@@ -914,10 +885,15 @@ class MoveEnemyTarget extends Action {
   }
 
   void execute(Tank tank, float deltaTime) {
+    if (tank == null || tank.tankState.hitPoints <= 1) {
+      state = execState.Success;
+      return;
+    }
     if (tank.tankState.astate.enemyTarget == null) {
       state = execState.Success;
       return;
     }
+
     PVector otherPos = tank.tankState.astate.enemyTarget.lastKnownPosition;
     if (GS.computePath(tank, otherPos, tank.team.nav, GeneralSearch.ASTAR)) {
       tank.AP().pathSetRoute(GS.path);
@@ -964,7 +940,7 @@ class Shoot extends Action {
   }
 
   public boolean preCondition(HTNState state) {
-    return state.tank.astate.isReloading == false && state.tank.astate.enemyTarget.dist <= LONGFIRERANGE;
+    return state.tank.astate.isReloading == false && state.tank.astate.enemyTarget.dist <= LONGFIRERANGE + 15;
   }
 
   public HTNState effect(HTNState state) {
@@ -980,6 +956,7 @@ class Shoot extends Action {
     }
 
     if (!tank.tankState.astate.isAligned) {
+      state = execState.Success;
       return;
     }
 

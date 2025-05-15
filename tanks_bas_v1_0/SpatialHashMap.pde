@@ -278,6 +278,11 @@ public class NavLayout {
     GenerateLayout();
   }
 
+  void clear() {
+    tankOnCells.clear();
+    cells = new Cell[]{};
+  }
+
   void GenerateLayout() {
 
     for (int i = 0; i < mheight/minRec; i++) {
@@ -539,7 +544,7 @@ public class NavLayout {
 
         for (int i = 0; i < 3*3; i++) {
           if ( cells[list[i]].occupier != null) {
-             cells[list[i]].multiOcc = true;
+            cells[list[i]].multiOcc = true;
           } else {
             cells[list[i]].occupier = t;
           }
@@ -570,7 +575,7 @@ public class NavLayout {
 
       for (int j = 0; j < size; j++) {
 
-        if (dist(x, y, cells[j].pos.x, cells[j].pos.y ) <= diameter) {
+        if (dist(x, y, cells[j].pos.x, cells[j].pos.y ) <= diameter + 10) {
           cells[j].isWalkable = false;
         }
       }

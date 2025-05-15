@@ -10,6 +10,7 @@ public class BulletManager {
 
   void update(float deltaTime) {
     Iterator<Bullet> it = bullets.iterator();
+    
     while (it.hasNext()) {
 
       Bullet b = it.next();
@@ -18,6 +19,8 @@ public class BulletManager {
         it.remove();
       }
     }
+    
+    
   }
 
   void draw() {
@@ -26,6 +29,10 @@ public class BulletManager {
     for (Bullet b : bullets) {
       b.draw();
     }
+  }
+  
+  void clear(){
+    bullets.clear();
   }
 }
 

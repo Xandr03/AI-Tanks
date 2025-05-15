@@ -23,7 +23,6 @@ public class TankPatroleState extends State {
       if (t.checkEnemyBoundry((new PVector((float)base.pos().x, (float)base.pos().y))) && t.EnemyInVision() ) {
         Cell enemyBaseCell = new Cell(new PVector(0, 0), false);
         enemyBaseCell.isEnemyBase = true;
-        t.reportCells.add(enemyBaseCell);
         t.returnToBase();
       }
       if (t.AP().pathRouteLength() <= 0) {
