@@ -1,5 +1,4 @@
-//Alexander Bakas alba5453 //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
-
+//Alexander Bakas alba5453  //<>// //<>//
 
 import game2dai.entities.*;
 import game2dai.entityshapes.ps.*;
@@ -13,6 +12,10 @@ import game2dai.graph.*;
 import java.util.*;
 import java.awt.event.KeyEvent;
 import java.util.function.*;
+
+
+
+final float TURRETROTATIONSPEED = 3;
 
 int SearchOption = 100;
 
@@ -34,7 +37,7 @@ color team0Color;
 PVector team0_tank0_startpos;
 PVector team0_tank1_startpos;
 PVector team0_tank2_startpos;
-Tank tank0, tank1, tank2;  //<>// //<>// //<>//
+Tank tank0, tank1, tank2;  //<>// //<>//
 
 // Team1
 color team1Color;
@@ -241,7 +244,7 @@ void draw()
   //displayGUI();
 }
 
-public void resetWorld(){
+public void resetWorld() {
   worldTimer = Integer.MAX_VALUE;
 }
 

@@ -88,6 +88,11 @@ class TrafficManager {
       trafficTank.crossingTank = 0;
       return;
     }
+    if (tank.tankState.isSearchingRegion) {
+      trafficTank.facingTank = Integer.MAX_VALUE;
+      trafficTank.crossingTank =  Integer.MAX_VALUE;
+      return;
+    }
 
     for (Tank t : keySet) {
       trafficTank.facingTank += isFacingTank(tank, t);
@@ -467,7 +472,6 @@ public class StatsWindow {
     }
     if (owner.runner != null) {
       text("Tasks: " + owner.runner.toString(), newOffset, 60);
-      
     }
   }
 }

@@ -1,45 +1,8 @@
-/*
-public static class IDGEN {
- 
- public static int currentID = 0;
- public static int getID() {
- return currentID++;
- }
- }
- 
- 
- public enum TaskID {
- ATTACK_ACT,
- MOVETOTARGET,
- FLANK,
- MOVECLOSETOTARGET,
- MOVEATDISTANCE,
- FLANKTHETARGET
- }
- 
- public enum OperatorID {
- OPERATOR_FIRE,
- OPERATOR_MOVE,
- OPERATOR_ROTATE,
- }
- 
- 
- public static class HTNLibrary {
- 
- static void add(Action a, TaskID id) {
- }
- 
- static void combine(Action a, HighLevelAction hla) {
- hla.refinments.add(a);
- }
- }
- */
-
-
-
+//Alexander Bakas alba5453
 Planner planner = new Planner();
 
 
+//Klass för hålla i world state
 public class HTNState {
 
   TankState tank = new TankState();
@@ -48,9 +11,6 @@ public class HTNState {
   RegionManager rm;
 
   EnemyTank[] enemyTanks = new EnemyTank[3];
-
-  //Regions
-
 
   HTNState(Team team) {
     this.rm = team.nav.rm;
@@ -79,46 +39,53 @@ public class HTNState {
   }
 }
 
+// enum för en Actions state om den, failar, lyckas eller fortfarande kör.
 public enum execState {
   Success,
     Pending,
     Failed
 }
 
+// Plan runner är klassen som kör för varje separat tanks plan
 public class Plan_runner {
 
+  //lista av actions att köra
   LinkedList<Action> sequence = new LinkedList<>();
 
+  //nuvarande körande task
   Action runningTask;
 
+  // ägaren av plan runner
   Tank owner;
 
   Plan_runner(Tank tank) {
     this.owner = tank;
   }
 
-
+  //kör igenom sekvensen utav actions
   void update(float deltaTime) {
-    //System.out.println("update");
+
+    //om det inte finns en task att köra, hitta en ny plan
     if (runningTask == null && sequence != null && sequence.isEmpty()) {
       HTNState tankWorldState = new HTNState(owner.team.WorldState, owner.tankState, owner);
-
       setTasks(planner.Search(new BeTank(), tankWorldState));
-      System.out.println("ID: "+ owner.ID + this.toString());
       return;
     }
+    //om nuvarande körande task lyckas så gör nästa action
     if (runningTask.state == execState.Success) {
       this.sequence.pop();
       runningTask = this.sequence.peek();
       return;
     }
+    //om nuvarande körande tasl misslyckas plannera om en ny plan
     if (runningTask.state == execState.Failed) {
       HTNState tankWorldState = new HTNState(owner.team.WorldState, owner.tankState, owner);
       setTasks(planner.Search(new BeTank(), tankWorldState));
       System.out.println("ID: "+ owner.ID + this.toString());
       return;
     }
-    //System.out.println("runner update execute");
+
+    //kör task
     runningTask.execute(owner, deltaTime);
   }
 
@@ -136,37 +103,45 @@ public class Plan_runner {
   }
 }
 
-
+//huvud klassen för att kunna plannera planner för alla agenter
 public class Planner {
 
-
+  //search går igenom problemet och hittar en lösnings
   public LinkedList<Action> Search(HighLevelAction problem, HTNState state) {
+
+    //initilize the state and frontier
     HTNState initialState = state;
     LinkedList<BaseAction> frontier = new LinkedList<>();
-
     frontier.addAll(problem.getRefinments(state));
 
 
     LinkedList<Action> prefix = new LinkedList<>();
 
+
     while (!frontier.isEmpty()) {
-      //System.out.println("Planning While");
+
+      //Get the FIFO in frontier
       BaseAction plan = frontier.pop();
       HighLevelAction hla = null;
-      System.out.println("Task Poped " + plan.taskName);
+
+
+      //om plan är en hla sätt hla till plan
       if (plan instanceof HighLevelAction) {
         hla = (HighLevelAction)plan;
       }
 
+      //om hla == null så är det en action
       if (hla == null) {
         Action a = (Action)plan;
+        //testa om handlingen är tillåten att köras
         if (a.preCondition(initialState)) {
-          System.out.println("  Planning added " + a.taskName);
           prefix.add(a);
+          //utge effekt på initial state
           initialState = a.effect(initialState);
         }
         continue;
       }
+      //om det är en hla så refine för en sekvens utav actions
       frontier.addAll(refine(hla, initialState));
     }
     return prefix;
@@ -176,17 +151,23 @@ public class Planner {
     return hla.getRefinments(state);
   }
 }
+
+//Bas klass för Actions och HighLevelAction
 public class BaseAction {
   String taskName = "NO NAME";
 }
 
+
+//Action klass
 public abstract class Action extends BaseAction implements Comparable<BaseAction> { //Operator / primitive Action
 
+  //Actions nuvarande state
   execState state = execState.Pending;
 
   @Override public int compareTo(BaseAction otherNode) {
     return -1;
   }
+
   public abstract boolean preCondition(HTNState state);
 
   public abstract HTNState effect(HTNState state);
@@ -194,7 +175,7 @@ public abstract class Action extends BaseAction implements Comparable<BaseAction
   public abstract void execute(Tank tank, float deltaTime);
 }
 
-
+//Refinment klass för att få ut sekvenser av actions
 public class Refinment {
 
   ArrayList<BaseAction> tasks;
@@ -207,8 +188,8 @@ public class Refinment {
 }
 
 
-//Should hold a list of OperatorIDs
-public  class HighLevelAction extends BaseAction implements Comparable<BaseAction> { //Task
+//HighLevelAction klassen håller i
+public  class HighLevelAction extends BaseAction implements Comparable<BaseAction> {
 
   @Override public int compareTo(BaseAction other) {
     if (other instanceof Action) {
@@ -225,11 +206,14 @@ public  class HighLevelAction extends BaseAction implements Comparable<BaseActio
   }
 
 
-
+  //lista av potentiella refinments
   public ArrayList<Refinment> refinments = new ArrayList<>();
+
+
   public ArrayList<BaseAction> getRefinments(HTNState s) {
 
     ArrayList<BaseAction> actionsToReturn = new ArrayList<>();
+    //gå igen tillgängliga refinments och see om de är tillåtna att användas
     for (Refinment a : refinments) {
 
       if (a.preCondition.test(s)) {
@@ -240,10 +224,14 @@ public  class HighLevelAction extends BaseAction implements Comparable<BaseActio
   }
 }
 
+//BeTank är den högsta HLA i domänen och beskriver hur en tank ska betee sig
 public class BeTank extends HighLevelAction {
 
   BeTank() {
     taskName = "BeTank";
+
+    //Skapar listor av actions och skapar refinments av dem, med conditions
+
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
     tasks1.addAll(Arrays.asList(new AttackHLA()));
 
@@ -276,13 +264,18 @@ public class BeTank extends HighLevelAction {
   }
 }
 
+//En HLA för att ta hand om Traffic
 public class TrafficHLA extends HighLevelAction {
 
   TrafficHLA() {
     taskName = "TrafficHLA";
+
+    //Skapar listor av actions och skapar refinments av dem, med conditions
+
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
     tasks1.addAll(Arrays.asList(new CheckTraffic()));
 
+    //CheckTraffic
     refinments.add(new Refinment(
       s -> true,
       tasks1
@@ -290,10 +283,12 @@ public class TrafficHLA extends HighLevelAction {
   }
 }
 
-
+//En HLA för att hantera traffic
 public class CheckTraffic extends HighLevelAction {
   CheckTraffic() {
     taskName = "CheckTraffic";
+
+    //Skapar listor av actions och skapar refinments av dem, med conditions
 
     ArrayList<BaseAction> tasks2 = new ArrayList<>();
     tasks2.addAll(Arrays.asList(new Yield()));
@@ -327,12 +322,11 @@ public class CheckTraffic extends HighLevelAction {
   }
 }
 
+//en action för att planera en ny route
 public class RePlanRoute extends Action {
   RePlanRoute() {
     taskName = "RePlanRoute";
   }
-
-
 
   public boolean preCondition(HTNState s) {
     return true;
@@ -353,7 +347,7 @@ public class RePlanRoute extends Action {
   }
 }
 
-
+//en action för att backa up
 public class BackUp extends Action {
 
   BackUp() {
@@ -372,41 +366,23 @@ public class BackUp extends Action {
 
     tank.tankState.tstate.isInTraffic = true;
 
-
-
     for (TankData other : tank.tankState.tstate.otherTanks) {
 
       if (other.tank.tankState.tstate.hasPriority) {
-        //System.out.println("SHOULD BE BACKING UP ID: " + tank.ID);
         tank.AP().pathOn();
         tank.AP().pathRoute().clear();
         Vector2D potentialDest = tank.getGoodDirection(other.pos);
-        if (tank.tankState.tstate.isObscured) {
-          // other.tank.replan(tank);
-        }
         tank.AP().pathAddToRoute(new Vector2D[]{potentialDest});
         tank.tankState.isBackingUp = true;
         state = execState.Success;
-        return;
       }
-
-      /*
-      PVector direction = VecMath.direction((float)tank.pos().x, (float)tank.pos().y, (float)other.pos().x, (float)other.pos().y);
-       float angle = VecMath.dotAngle(new PVector((float)tank.heading().x, (float)tank.heading().y), VecMath.normalize(direction));
-       float dist = dist((float)tank.pos().x, (float)tank.pos().y, (float)other.pos().x, (float)other.pos().y);
-       
-       if (dist <= 80 && angle > 0) {
-       tank.velocity(tank.heading().x * -1 * 30, tank.heading().y * -1 * 30);
-       return;
-       }
-       */
     }
 
     state = execState.Success;
   }
 }
 
-
+//en HLA action för att avvakta
 public class Yield extends HighLevelAction {
 
   Yield() {
@@ -421,7 +397,7 @@ public class Yield extends HighLevelAction {
   }
 }
 
-
+//en actions för att stanna
 public class Stop extends Action {
   Stop() {
     taskName = "Stop";
@@ -440,13 +416,12 @@ public class Stop extends Action {
     tank.velocity(0, 0);
     tank.AP().pathOff();
     tank.AP().pathRoute().clear();
-    // System.out.println("-----------------------------STOP--------------------------------- ID " + tank.ID  +  " Backing UP: "+  tank.tankState.isBackingUp);
-    //tank.tankState.tstate.isInTraffic = true;
     tank.tankState.isStopped = true;
     state = execState.Success;
   }
 }
 
+//en action för att vänta
 public class Wait extends Action {
 
   Wait() {
@@ -470,7 +445,7 @@ public class Wait extends Action {
 }
 
 
-
+//en action för att vara idle
 public class Idle extends Action {
 
   Idle() {
@@ -495,13 +470,15 @@ public class Idle extends Action {
 
 
 
-
+// en HLA för att explorera 
 public class ExploreHLA extends HighLevelAction {
 
   ExploreHLA() {
     taskName = "ExploreHLA";
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
     tasks1.addAll(Arrays.asList( new ExploreMap()));
+    
+    //Explore Map
     refinments.add(new Refinment(
       state -> state.rm.RegExProc >= 100.0f,
       tasks1
@@ -510,6 +487,8 @@ public class ExploreHLA extends HighLevelAction {
 
     ArrayList<BaseAction> tasks2 = new ArrayList<>();
     tasks2.addAll(Arrays.asList(new ExploreRegion()));
+    
+    //Explore Region
     refinments.add(new Refinment(
       state -> state.rm.RegExProc < 100.0f,
       tasks2
@@ -517,6 +496,7 @@ public class ExploreHLA extends HighLevelAction {
   }
 }
 
+//en HLA för att explorera kartan
 public class ExploreMap extends HighLevelAction {
 
   ExploreMap() {
@@ -531,7 +511,7 @@ public class ExploreMap extends HighLevelAction {
 }
 
 
-
+//en HLA för att explorera Regioner
 public class ExploreRegion extends HighLevelAction {
   ExploreRegion() {
     //System.out.println("*** ExploreRegion");
@@ -539,25 +519,14 @@ public class ExploreRegion extends HighLevelAction {
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
     tasks1.addAll(Arrays.asList(new PickRegion(), new Rotate(), new MoveToRegion(), new SearchRegion()));
 
-    ArrayList<BaseAction> tasks2 = new ArrayList<>();
-    tasks2.addAll(Arrays.asList(new PickRegion(), new RotateToRegion()));
-
     refinments.add(new Refinment(
       s -> (s.IsWorldPeacefull && s.tank.isWaiting == false),
       tasks1
       ));
-
-
-    /*
-    refinments.add(new Refinment(
-     s -> (s.IsWorldPeacefull && s.tank.isStopped),
-     tasks2
-     ));
-     */
   }
 }
 
-
+//en action för att rotera till regionen
 public class RotateToRegion extends Action {
   RotateToRegion() {
     taskName = "RotateToRegion";
@@ -580,7 +549,7 @@ public class RotateToRegion extends Action {
   }
 }
 
-
+//en action för att välja region
 public class PickRegion extends Action {
 
   PickRegion() {
@@ -620,6 +589,8 @@ public class PickRegion extends Action {
   }
 }
 
+
+//en action för att röra sig mot regionen
 public class MoveToRegion extends Action {
 
   boolean pointSet = false;
@@ -655,18 +626,21 @@ public class MoveToRegion extends Action {
   }
 }
 
+//en HLA för att söka regionen
 public class SearchRegion extends HighLevelAction {
   SearchRegion() {
     taskName = "SearchRegion";
-    //System.out.println("*** SearchRegion");
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
     tasks1.addAll(Arrays.asList(new Rotate(), new MoveInRegion()));
+    
+    //rotate() and MoveInRegion()
     refinments.add(new Refinment(
       s -> s.tank.regionCur != GridRegion.INV &&  s.tank.regionDes != GridRegion.INV && s.tank.regionCur == s.tank.regionDes,
       tasks1));
   }
 }
 
+//en action för att röra sig inom en region
 public class MoveInRegion extends Action {
 
   MoveInRegion() {
@@ -686,7 +660,6 @@ public class MoveInRegion extends Action {
 
 
   public void execute(Tank tank, float deltaTime) {
-    //System.out.println("MoveInRegion Cur: "+ tank.tankState.regionCur +" Des: " + tank.tankState.regionDes);
     tank.tankState.isSearchingRegion = true;
     tank.AP().pathOn();
     tank.tankState.regionState.occupied = true;
@@ -710,7 +683,7 @@ public class MoveInRegion extends Action {
   }
 }
 
-//Tank position compared to Region and calculate if they have been in there for over 10 seconds
+//en action för att gå omkring
 public class WalkAround extends Action {
 
   WalkAround() {
@@ -741,6 +714,7 @@ public class WalkAround extends Action {
   }
 }
 
+//en HLA för att attakera en tank
 public class AttackHLA extends HighLevelAction {
   AttackHLA() {
     taskName = "AttackHLA";
@@ -748,6 +722,8 @@ public class AttackHLA extends HighLevelAction {
 
     ArrayList<BaseAction> tasks2 = new ArrayList<>();
     tasks2.addAll(Arrays.asList(new Rotate(), new Shoot()));
+    
+    //Rotate() and Shoot()
     refinments.add(new Refinment(
       s -> s.tank.hitPoints <= 1,
       tasks2
@@ -755,6 +731,8 @@ public class AttackHLA extends HighLevelAction {
 
     ArrayList<BaseAction> tasks1 = new ArrayList<>();
     tasks1.addAll(Arrays.asList(new MoveToTarget(), new Rotate(), new Shoot()));
+    
+    //MoveToTarget(), Rotate() and Shoot ()
     refinments.add(new Refinment(
       s -> s.tank.hitPoints > 1,
       tasks1
@@ -762,6 +740,7 @@ public class AttackHLA extends HighLevelAction {
   }
 }
 
+//en HLA för att röra sig mot target
 public class MoveToTarget extends HighLevelAction {
 
   MoveToTarget() {
@@ -771,14 +750,14 @@ public class MoveToTarget extends HighLevelAction {
     ArrayList<BaseAction> tasks2 = new ArrayList<>();
     tasks2.addAll(Arrays.asList(new MoveAtDistance()));
 
-    //Refinement 1
+    //MoveCloseToTarget
     refinments.add(new Refinment(
       s -> s.tank.hitPoints >= 3,
       tasks1
       ));
 
 
-    //Refinemnt 2
+    //MoveAtDistance
     refinments.add(new Refinment(
       s -> s.tank.hitPoints < 3 && s.tank.hitPoints > 1,
       tasks2
@@ -787,7 +766,7 @@ public class MoveToTarget extends HighLevelAction {
 }
 
 
-
+//en HLA för att röra sig nära en Target
 public class MoveCloseToTarget extends HighLevelAction {
 
   MoveCloseToTarget() {
@@ -799,11 +778,13 @@ public class MoveCloseToTarget extends HighLevelAction {
     ArrayList<BaseAction> tasks2 = new ArrayList<>();
     tasks2.addAll(Arrays.asList(new Stop(), new Wait()));
 
+    //MoveEnemyTarget
     refinments.add(new Refinment(
       s -> s.tank.astate.enemyTarget.dist > CLOSEFIRERANGE,
       tasks1
       ));
 
+    //Stop() and Wait()
     refinments.add(new Refinment(
       s -> s.tank.astate.enemyTarget.dist <= CLOSEFIRERANGE,
       tasks2
@@ -811,7 +792,7 @@ public class MoveCloseToTarget extends HighLevelAction {
   }
 }
 
-
+//en HLA för att röra sig med en distance
 public class MoveAtDistance extends HighLevelAction {
 
   MoveAtDistance() {
@@ -822,12 +803,14 @@ public class MoveAtDistance extends HighLevelAction {
 
     ArrayList<BaseAction> tasks2 = new ArrayList<>();
     tasks2.addAll(Arrays.asList(new MoveAwayFromEnemy()));
-
+    
+    //MoveEnemyTarget
     refinments.add(new Refinment(
       s -> s.tank.astate.enemyTarget.dist > LONGFIRERANGE,
       tasks1
       ));
 
+    //MoveAwayFromEnemy
     refinments.add(new Refinment(
       s -> s.tank.astate.enemyTarget.dist <= LONGFIRERANGE - 30,
       tasks2
@@ -835,6 +818,7 @@ public class MoveAtDistance extends HighLevelAction {
   }
 }
 
+//en action för att röra sig ifrån target
 public class MoveAwayFromEnemy extends Action {
   MoveAwayFromEnemy() {
     taskName = "MoveAwayFromEnemy";
@@ -847,6 +831,7 @@ public class MoveAwayFromEnemy extends Action {
     //Closer to target
     return state;
   }
+
 
   void execute(Tank tank, float deltaTime) {
     if (tank == null || tank.tankState.hitPoints <= 1) {
@@ -868,6 +853,7 @@ public class MoveAwayFromEnemy extends Action {
 }
 
 
+//en action för att röra sig till target
 class MoveEnemyTarget extends Action {
 
   MoveEnemyTarget() {
@@ -902,6 +888,7 @@ class MoveEnemyTarget extends Action {
   }
 }
 
+//en action för att rotera
 class Rotate extends Action {
 
   Rotate() {
@@ -933,6 +920,7 @@ class Rotate extends Action {
   }
 }
 
+//en action för att skjuta
 class Shoot extends Action {
 
   Shoot() {
@@ -982,6 +970,7 @@ class Shoot extends Action {
   }
 }
 
+//en action för att ladda om 
 class Reload extends Action {
   Reload() {
     taskName = "Reload";

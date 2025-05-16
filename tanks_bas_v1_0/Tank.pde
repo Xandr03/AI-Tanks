@@ -7,10 +7,9 @@ TankGlobalState tankGlobalState = new TankGlobalState();
 TankIdleState idle = new TankIdleState();
 
 
-final float TANKRADIUS = 0;
-final float MAXALLOWEDISTANCE =  80 + TANKRADIUS;
-final float MAXSTOPDISTANCE = 80 + TANKRADIUS;
-final float MAXMOVEAWAYDISTANCE = 75 + TANKRADIUS;
+final float MAXALLOWEDISTANCE =  80 ;
+final float MAXSTOPDISTANCE = 80;
+final float MAXMOVEAWAYDISTANCE = 75 ;
 final float FIELWOFVIEW = 180;
 final float FRONTVIEW = 5.0f;
 final float CROSSINGVIEW = 90.0f/2.0f;
@@ -559,6 +558,7 @@ class Tank extends Vehicle {
   }
 }
 
+
 public class Turret {
   Tank owner;
 
@@ -580,20 +580,20 @@ public class Turret {
     }
 
     if (crossProduct < 0) {
-      PVector red = new PVector(cos(radians(-3)), sin(radians(-3)));
-      PVector green = new PVector(-sin(radians(-3)), cos(radians(-3)));
+      PVector v = new PVector(cos(radians(-TURRETROTATIONSPEED)), sin(radians(-TURRETROTATIONSPEED)));
+      PVector w = new PVector(-sin(radians(-TURRETROTATIONSPEED)), cos(radians(-TURRETROTATIONSPEED)));
 
-      PVector x = new PVector(red.x * forwardVector.x, red.y * forwardVector.x);
-      PVector y = new PVector(green.x * forwardVector.y, green.y * forwardVector.y);
+      PVector x = new PVector(v.x * forwardVector.x, v.y * forwardVector.x);
+      PVector y = new PVector(w.x * forwardVector.y, w.y * forwardVector.y);
 
       forwardVector = x.add(y);
     } else {
 
-      PVector red = new PVector(cos(radians(3)), sin(radians(3)));
-      PVector green = new PVector(-sin(radians(3)), cos(radians(3)));
+      PVector v = new PVector(cos(radians(TURRETROTATIONSPEED)), sin(radians(TURRETROTATIONSPEED)));
+      PVector w = new PVector(-sin(radians(TURRETROTATIONSPEED)), cos(radians(TURRETROTATIONSPEED)));
 
-      PVector x = new PVector(red.x * forwardVector.x, red.y * forwardVector.x);
-      PVector y = new PVector(green.x * forwardVector.y, green.y * forwardVector.y);
+      PVector x = new PVector(v.x * forwardVector.x, v.y * forwardVector.x);
+      PVector y = new PVector(w.x * forwardVector.y, w.y * forwardVector.y);
 
       forwardVector = x.add(y);
     }
